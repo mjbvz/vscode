@@ -353,7 +353,7 @@ class MarkdownPreview extends Disposable implements WebviewResourceProvider {
 		await vscode.commands.executeCommand('markdown.showSource');
 
 		const revealLineInEditor = (editor: vscode.TextEditor) => {
-			const position = new vscode.Position(line, 0);
+			const position = new vscode.Position(Math.max(0, line), 0);
 			const newSelection = new vscode.Selection(position, position);
 			editor.selection = newSelection;
 			editor.revealRange(newSelection, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
