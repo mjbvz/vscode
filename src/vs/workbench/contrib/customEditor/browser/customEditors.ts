@@ -26,7 +26,7 @@ import { EditorInput } from 'vs/workbench/common/editor/editorInput';
 import { CONTEXT_ACTIVE_CUSTOM_EDITOR_ID, CONTEXT_FOCUSED_CUSTOM_EDITOR_IS_EDITABLE, CustomEditorCapabilities, CustomEditorInfo, CustomEditorInfoCollection, ICustomEditorService } from 'vs/workbench/contrib/customEditor/common/customEditor';
 import { CustomEditorModelManager } from 'vs/workbench/contrib/customEditor/common/customEditorModelManager';
 import { IEditorGroup, IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
-import { IEditorResolverService, IEditorType, RegisteredEditorPriority } from 'vs/workbench/services/editor/common/editorResolverService';
+import { IEditorResolverService, RegisteredEditorPriority } from 'vs/workbench/services/editor/common/editorResolverService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { ContributedCustomEditors } from '../common/contributedCustomEditors';
 import { CustomEditorInput } from './customEditorInput';
@@ -91,10 +91,6 @@ export class CustomEditorService extends Disposable implements ICustomEditorServ
 		}));
 
 		this.updateContexts();
-	}
-
-	getEditorTypes(): IEditorType[] {
-		return [...this._contributedEditors];
 	}
 
 	private withActiveCustomEditor(f: (editor: CustomEditorInput) => void | Promise<void>): boolean | Promise<void> {

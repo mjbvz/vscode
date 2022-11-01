@@ -35,7 +35,7 @@ import { updateEditorTopPadding } from 'vs/workbench/contrib/notebook/common/not
 import { NotebookOutputRendererInfo, NotebookStaticPreloadInfo as NotebookStaticPreloadInfo } from 'vs/workbench/contrib/notebook/common/notebookOutputRenderer';
 import { NotebookEditorDescriptor, NotebookProviderInfo } from 'vs/workbench/contrib/notebook/common/notebookProvider';
 import { ComplexNotebookProviderInfo, INotebookContentProvider, INotebookSerializer, INotebookService, SimpleNotebookProviderInfo } from 'vs/workbench/contrib/notebook/common/notebookService';
-import { DiffEditorInputFactoryFunction, EditorInputFactoryFunction, EditorInputFactoryObject, IEditorResolverService, IEditorType, RegisteredEditorInfo, RegisteredEditorPriority, UntitledEditorInputFactoryFunction } from 'vs/workbench/services/editor/common/editorResolverService';
+import { DiffEditorInputFactoryFunction, EditorInputFactoryFunction, EditorInputFactoryObject, IEditorResolverService, RegisteredEditorInfo, RegisteredEditorPriority, UntitledEditorInputFactoryFunction } from 'vs/workbench/services/editor/common/editorResolverService';
 import { IExtensionService, isProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
 import { IExtensionPointUser } from 'vs/workbench/services/extensions/common/extensionsRegistry';
 
@@ -579,15 +579,6 @@ export class NotebookService extends Disposable implements INotebookService {
 		};
 		this._register(this._codeEditorService.onDecorationTypeRegistered(onDidAddDecorationType));
 		this._codeEditorService.listDecorationTypes().forEach(onDidAddDecorationType);
-	}
-
-
-	getEditorTypes(): IEditorType[] {
-		return [...this.notebookProviderInfoStore].map(info => ({
-			id: info.id,
-			displayName: info.displayName,
-			providerDisplayName: info.providerDisplayName
-		}));
 	}
 
 	clearEditorCache(): void {
