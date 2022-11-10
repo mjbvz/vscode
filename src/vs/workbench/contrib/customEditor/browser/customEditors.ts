@@ -10,6 +10,7 @@ import { Schemas } from 'vs/base/common/network';
 import { extname, isEqual } from 'vs/base/common/resources';
 import { assertIsDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
+import 'vs/css!./customEditor';
 import { RedoCommand, UndoCommand } from 'vs/editor/browser/editorExtensions';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IResourceEditorInput } from 'vs/platform/editor/common/editor';
@@ -17,8 +18,6 @@ import { FileOperation, IFileService } from 'vs/platform/files/common/files';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IStorageService } from 'vs/platform/storage/common/storage';
-import * as colorRegistry from 'vs/platform/theme/common/colorRegistry';
-import { registerThemingParticipant } from 'vs/platform/theme/common/themeService';
 import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
 import { DEFAULT_EDITOR_ASSOCIATION, EditorExtensions, GroupIdentifier, IEditorFactoryRegistry, IResourceDiffEditorInput } from 'vs/workbench/common/editor';
 import { DiffEditorInput } from 'vs/workbench/common/editor/diffEditorInput';
@@ -262,10 +261,3 @@ export class CustomEditorService extends Disposable implements ICustomEditorServ
 		}
 	}
 }
-
-registerThemingParticipant((theme, collector) => {
-	const shadow = theme.getColor(colorRegistry.scrollbarShadow);
-	if (shadow) {
-		collector.addRule(`.webview.modified { box-shadow: -6px 0 5px -5px ${shadow}; }`);
-	}
-});
