@@ -530,7 +530,7 @@ export interface CompletionItemProvider {
 	resolveCompletionItem?(model: model.ITextModel, position: Position, item: CompletionItem, token: CancellationToken): ProviderResult<CompletionItem>;
 }
 
-export interface CodeAction {
+export interface CodeActionNew {
 	title: string;
 	command?: Command;
 	edit?: WorkspaceEdit;
@@ -556,7 +556,7 @@ export interface CodeActionContext {
 }
 
 export interface CodeActionList extends IDisposable {
-	readonly actions: ReadonlyArray<CodeAction>;
+	readonly actions: ReadonlyArray<CodeActionNew>;
 }
 
 /**

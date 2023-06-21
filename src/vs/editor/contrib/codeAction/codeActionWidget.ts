@@ -9,14 +9,14 @@ import { canceled } from 'vs/base/common/errors';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { Position, IPosition } from 'vs/editor/common/core/position';
 import { ScrollType } from 'vs/editor/common/editorCommon';
-import { CodeAction } from 'vs/editor/common/modes';
+import { CodeActionNew } from 'vs/editor/common/modes';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
 import { CodeActionSet } from 'vs/editor/contrib/codeAction/codeAction';
 import { Disposable, MutableDisposable } from 'vs/base/common/lifecycle';
 import { IAnchor } from 'vs/base/browser/ui/contextview/contextview';
 
 interface CodeActionWidgetDelegate {
-	onSelectCodeAction: (action: CodeAction) => Promise<any>;
+	onSelectCodeAction: (action: CodeActionNew) => Promise<any>;
 }
 
 export class CodeActionWidget extends Disposable {
@@ -63,7 +63,7 @@ export class CodeActionWidget extends Disposable {
 		});
 	}
 
-	private codeActionToAction(action: CodeAction): Action {
+	private codeActionToAction(action: CodeActionNew): Action {
 		const id = action.command ? action.command.id : action.title;
 		const title = action.title;
 		return new Action(id, title, undefined, true, () => this._delegate.onSelectCodeAction(action));

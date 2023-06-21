@@ -11,20 +11,20 @@ import { registerLanguageCommand } from 'vs/editor/browser/editorExtensions';
 import { Range } from 'vs/editor/common/core/range';
 import { Selection } from 'vs/editor/common/core/selection';
 import { ITextModel } from 'vs/editor/common/model';
-import { CodeAction, CodeActionContext, CodeActionProviderRegistry, CodeActionTrigger as CodeActionTriggerKind } from 'vs/editor/common/modes';
+import { CodeActionNew as CodeActiona, CodeActionContext, CodeActionProviderRegistry, CodeActionTrigger as CodeActionTriggerKind } from 'vs/editor/common/modes';
 import { IModelService } from 'vs/editor/common/services/modelService';
 import { CodeActionFilter, CodeActionKind, CodeActionTrigger, filtersAction, mayIncludeActionsOfKind } from './codeActionTrigger';
 import { TextModelCancellationTokenSource } from 'vs/editor/browser/core/editorState';
 import { Disposable, DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 
 export interface CodeActionSet extends IDisposable {
-	readonly actions: readonly CodeAction[];
+	readonly actions: readonly CodeActiona[];
 	readonly hasAutoFix: boolean;
 }
 
 class ManagedCodeActionSet extends Disposable implements CodeActionSet {
 
-	private static codeActionsComparator(a: CodeAction, b: CodeAction): number {
+	private static codeActionsComparator(a: CodeActiona, b: CodeActiona): number {
 		if (isNonEmptyArray(a.diagnostics)) {
 			if (isNonEmptyArray(b.diagnostics)) {
 				return a.diagnostics[0].message.localeCompare(b.diagnostics[0].message);
@@ -38,9 +38,9 @@ class ManagedCodeActionSet extends Disposable implements CodeActionSet {
 		}
 	}
 
-	public readonly actions: readonly CodeAction[];
+	public readonly actions: readonly CodeActiona[];
 
-	public constructor(actions: readonly CodeAction[], disposables: DisposableStore) {
+	public constructor(actions: readonly CodeActiona[], disposables: DisposableStore) {
 		super();
 		this._register(disposables);
 		this.actions = mergeSort([...actions], ManagedCodeActionSet.codeActionsComparator);
@@ -75,7 +75,7 @@ export function getCodeActions(
 			}
 			disposables.add(providedCodeActions);
 			return providedCodeActions.actions.filter(action => action && filtersAction(filter, action));
-		}, (err): CodeAction[] => {
+		}, (err): CodeActiona[] => {
 			if (isPromiseCanceledError(err)) {
 				throw err;
 			}
@@ -116,7 +116,7 @@ function getCodeActionProviders(
 		});
 }
 
-registerLanguageCommand('_executeCodeActionProvider', async function (accessor, args): Promise<ReadonlyArray<CodeAction>> {
+registerLanguageCommand('_executeCodeActionProvider', async function (accessor, args): Promise<ReadonlyArray<CodeActiona>> {
 	const { resource, range, kind } = args;
 	if (!(resource instanceof URI) || !Range.isIRange(range)) {
 		throw illegalArgument();
