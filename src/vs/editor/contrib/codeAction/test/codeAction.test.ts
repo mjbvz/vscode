@@ -13,7 +13,7 @@ import { CodeActionKind } from 'vs/editor/contrib/codeAction/codeActionTrigger';
 import { IMarkerData, MarkerSeverity } from 'vs/platform/markers/common/markers';
 import { CancellationToken } from 'vs/base/common/cancellation';
 
-function staticCodeActionProvider(...actions: modes.CodeActionNew[]): modes.CodeActionProvider {
+function staticCodeActionProvider(...actions: modes.CodeActionOld[]): modes.CodeActionProvider {
 	return new class implements modes.CodeActionProvider {
 		provideCodeActions(): modes.CodeActionList {
 			return {

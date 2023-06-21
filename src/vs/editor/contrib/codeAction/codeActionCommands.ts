@@ -11,7 +11,7 @@ import { EditorAction, EditorCommand, ServicesAccessor } from 'vs/editor/browser
 import { IBulkEditService } from 'vs/editor/browser/services/bulkEditService';
 import { IEditorContribution } from 'vs/editor/common/editorCommon';
 import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
-import { CodeActionNew } from 'vs/editor/common/modes';
+import { CodeActionOld } from 'vs/editor/common/modes';
 import { CodeActionUi } from 'vs/editor/contrib/codeAction/codeActionUi';
 import { MessageController } from 'vs/editor/contrib/message/messageController';
 import * as nls from 'vs/nls';
@@ -106,13 +106,13 @@ export class QuickFixController extends Disposable implements IEditorContributio
 		return this._model.trigger(trigger);
 	}
 
-	private _applyCodeAction(action: CodeActionNew): Promise<void> {
+	private _applyCodeAction(action: CodeActionOld): Promise<void> {
 		return applyCodeAction(action, this._bulkEditService, this._commandService, this._editor);
 	}
 }
 
 export async function applyCodeAction(
-	action: CodeActionNew,
+	action: CodeActionOld,
 	bulkEditService: IBulkEditService,
 	commandService: ICommandService,
 	editor?: ICodeEditor,

@@ -97,11 +97,11 @@ export class MainThreadLanguageFeatures implements MainThreadLanguageFeaturesSha
 		}
 	}
 
-	private static _reviveCodeActionDto(data: ReadonlyArray<CodeActionDto>): modes.CodeActionNew[] {
+	private static _reviveCodeActionDto(data: ReadonlyArray<CodeActionDto>): modes.CodeActionOld[] {
 		if (data) {
 			data.forEach(code => reviveWorkspaceEditDto(code.edit));
 		}
-		return <modes.CodeActionNew[]>data;
+		return <modes.CodeActionOld[]>data;
 	}
 
 	private static _reviveLinkDTO(data: LinkDto): modes.ILink {

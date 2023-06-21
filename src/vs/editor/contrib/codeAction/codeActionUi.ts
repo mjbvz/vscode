@@ -6,7 +6,7 @@
 import { onUnexpectedError } from 'vs/base/common/errors';
 import { Disposable, MutableDisposable } from 'vs/base/common/lifecycle';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { CodeActionNew } from 'vs/editor/common/modes';
+import { CodeActionOld } from 'vs/editor/common/modes';
 import { CodeActionSet } from 'vs/editor/contrib/codeAction/codeAction';
 import { MessageController } from 'vs/editor/contrib/message/messageController';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
@@ -28,7 +28,7 @@ export class CodeActionUi extends Disposable {
 		private readonly _editor: ICodeEditor,
 		quickFixActionId: string,
 		private readonly delegate: {
-			applyCodeAction: (action: CodeActionNew, regtriggerAfterApply: boolean) => void
+			applyCodeAction: (action: CodeActionOld, regtriggerAfterApply: boolean) => void
 		},
 		@IContextMenuService contextMenuService: IContextMenuService,
 		@IKeybindingService keybindingService: IKeybindingService,

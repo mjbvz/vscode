@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { startsWith } from 'vs/base/common/strings';
-import { CodeActionNew } from 'vs/editor/common/modes';
+import { CodeActionOld } from 'vs/editor/common/modes';
 import { Position } from 'vs/editor/common/core/position';
 
 export class CodeActionKind {
@@ -61,7 +61,7 @@ export function mayIncludeActionsOfKind(filter: CodeActionFilter, providedKind: 
 }
 
 
-export function filtersAction(filter: CodeActionFilter, action: CodeActionNew): boolean {
+export function filtersAction(filter: CodeActionFilter, action: CodeActionOld): boolean {
 	const actionKind = action.kind ? new CodeActionKind(action.kind) : undefined;
 
 	// Filter out actions by kind

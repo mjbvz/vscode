@@ -16,7 +16,7 @@ import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
 import { Selection } from 'vs/editor/common/core/selection';
 import { ITextModel } from 'vs/editor/common/model';
-import { CodeActionNew } from 'vs/editor/common/modes';
+import { CodeActionOld } from 'vs/editor/common/modes';
 import { shouldSynchronizeModel } from 'vs/editor/common/services/modelService';
 import { getCodeActions } from 'vs/editor/contrib/codeAction/codeAction';
 import { applyCodeAction } from 'vs/editor/contrib/codeAction/codeActionCommands';
@@ -311,7 +311,7 @@ class CodeActionOnSaveParticipant implements ISaveParticipant {
 		}
 	}
 
-	private async applyCodeActions(actionsToRun: readonly CodeActionNew[]) {
+	private async applyCodeActions(actionsToRun: readonly CodeActionOld[]) {
 		for (const action of actionsToRun) {
 			await applyCodeAction(action, this._bulkEditService, this._commandService);
 		}
