@@ -15,7 +15,7 @@ import { CodeActionProviderRegistry } from 'vs/editor/common/modes';
 import { IContextKey, IContextKeyService, RawContextKey } from 'vs/platform/contextkey/common/contextkey';
 import { IMarkerService } from 'vs/platform/markers/common/markers';
 import { IEditorProgressService } from 'vs/platform/progress/common/progress';
-import { getCodeActions, CodeActionSet } from './codeAction';
+import { getCodeActiona, CodeActionSet } from './codeAction';
 import { CodeActionTrigger } from './codeActionTrigger';
 
 export const SUPPORTED_CODE_ACTIONS = new RawContextKey<string>('supportedCodeAction', '');
@@ -209,7 +209,7 @@ export class CodeActionModel extends Disposable {
 					return;
 				}
 
-				const actions = createCancelablePromise(token => getCodeActions(model, trigger.selection, trigger.trigger, token));
+				const actions = createCancelablePromise(token => getCodeActiona(model, trigger.selection, trigger.trigger, token));
 				if (this._progressService && trigger.trigger.type === 'manual') {
 					this._progressService.showWhile(actions, 250);
 				}

@@ -32,7 +32,7 @@ import { IOpenerService, NullOpenerService } from 'vs/platform/opener/common/ope
 import { MarkerController, NextMarkerAction } from 'vs/editor/contrib/gotoError/gotoError';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { CancelablePromise, createCancelablePromise } from 'vs/base/common/async';
-import { getCodeActions, CodeActionSet } from 'vs/editor/contrib/codeAction/codeAction';
+import { getCodeActiona, CodeActionSet } from 'vs/editor/contrib/codeAction/codeAction';
 import { QuickFixAction, QuickFixController } from 'vs/editor/contrib/codeAction/codeActionCommands';
 import { CodeActionKind } from 'vs/editor/contrib/codeAction/codeActionTrigger';
 import { IModeService } from 'vs/editor/common/services/modeService';
@@ -578,7 +578,7 @@ export class ModesContentHoverWidget extends ContentHoverWidget {
 
 	private getCodeActions(marker: IMarker): CancelablePromise<CodeActionSet> {
 		return createCancelablePromise(cancellationToken => {
-			return getCodeActions(
+			return getCodeActiona(
 				this._editor.getModel()!,
 				new Range(marker.startLineNumber, marker.startColumn, marker.endLineNumber, marker.endColumn),
 				{ type: 'manual', filter: { kind: CodeActionKind.QuickFix } },

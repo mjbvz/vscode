@@ -18,7 +18,7 @@ import { Selection } from 'vs/editor/common/core/selection';
 import { ITextModel } from 'vs/editor/common/model';
 import { CodeActionOld } from 'vs/editor/common/modes';
 import { shouldSynchronizeModel } from 'vs/editor/common/services/modelService';
-import { getCodeActions } from 'vs/editor/contrib/codeAction/codeAction';
+import { getCodeActiona } from 'vs/editor/contrib/codeAction/codeAction';
 import { applyCodeAction } from 'vs/editor/contrib/codeAction/codeActionCommands';
 import { CodeActionKind } from 'vs/editor/contrib/codeAction/codeActionTrigger';
 import { formatDocumentWithSelectedProvider, FormattingMode } from 'vs/editor/contrib/format/format';
@@ -318,7 +318,7 @@ class CodeActionOnSaveParticipant implements ISaveParticipant {
 	}
 
 	private getActionsToRun(model: ITextModel, codeActionKind: CodeActionKind, token: CancellationToken) {
-		return getCodeActions(model, model.getFullModelRange(), {
+		return getCodeActiona(model, model.getFullModelRange(), {
 			type: 'auto',
 			filter: { kind: codeActionKind, includeSourceActions: true },
 		}, token);

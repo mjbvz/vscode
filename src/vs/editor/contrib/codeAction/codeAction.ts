@@ -51,7 +51,7 @@ class ManagedCodeActionSet extends Disposable implements CodeActionSet {
 	}
 }
 
-export function getCodeActions(
+export function getCodeActiona(
 	model: ITextModel,
 	rangeOrSelection: Range | Selection,
 	trigger: CodeActionTrigger,
@@ -127,7 +127,7 @@ registerLanguageCommand('_executeCodeActionProvider', async function (accessor, 
 		throw illegalArgument();
 	}
 
-	const codeActionSet = await getCodeActions(
+	const codeActionSet = await getCodeActiona(
 		model,
 		model.validateRange(range),
 		{ type: 'manual', filter: { includeSourceActions: true, kind: kind && kind.value ? new CodeActionKind(kind.value) : undefined } },
