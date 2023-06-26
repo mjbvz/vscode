@@ -12,7 +12,7 @@ import * as platform from 'vs/base/common/platform';
 import { dirname } from 'vs/base/common/resources';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/search.contribution';
-import { registerLanguageCommand } from 'vs/editor/browser/editorExtensions';
+import { registerLanguageCommandNew } from 'vs/editor/browser/editorExtensions';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { getSelectionSearchString } from 'vs/editor/contrib/find/findController';
 import { ToggleCaseSensitiveKeybinding, ToggleRegexKeybinding, ToggleWholeWordKeybinding } from 'vs/editor/contrib/find/findModel';
@@ -757,7 +757,7 @@ configurationRegistry.registerConfiguration({
 	}
 });
 
-registerLanguageCommand('_executeWorkspaceSymbolProvider', function (accessor, args: { query: string; }) {
+registerLanguageCommandNew('_executeWorkspaceSymbolProvider', function (accessor, args: { query: string; }) {
 	const { query } = args;
 	if (typeof query !== 'string') {
 		throw illegalArgument();

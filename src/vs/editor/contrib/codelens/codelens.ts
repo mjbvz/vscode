@@ -7,7 +7,7 @@ import { mergeSort } from 'vs/base/common/arrays';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { illegalArgument, onUnexpectedExternalError } from 'vs/base/common/errors';
 import { URI } from 'vs/base/common/uri';
-import { registerLanguageCommand } from 'vs/editor/browser/editorExtensions';
+import { registerLanguageCommandNew } from 'vs/editor/browser/editorExtensions';
 import { ITextModel } from 'vs/editor/common/model';
 import { CodeLensProvider, CodeLensProviderRegistry, CodeLens, CodeLensList } from 'vs/editor/common/modes';
 import { IModelService } from 'vs/editor/common/services/modelService';
@@ -76,7 +76,7 @@ export function getCodeLensData(model: ITextModel, token: CancellationToken): Pr
 	});
 }
 
-registerLanguageCommand('_executeCodeLensProvider', function (accessor, args) {
+registerLanguageCommandNew('_executeCodeLensProvider', function (accessor, args) {
 
 	let { resource, itemResolveCount } = args;
 	if (!(resource instanceof URI)) {

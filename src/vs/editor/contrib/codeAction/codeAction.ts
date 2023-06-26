@@ -7,7 +7,7 @@ import { equals, flatten, isNonEmptyArray, mergeSort } from 'vs/base/common/arra
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { illegalArgument, isPromiseCanceledError, onUnexpectedExternalError } from 'vs/base/common/errors';
 import { URI } from 'vs/base/common/uri';
-import { registerLanguageCommand } from 'vs/editor/browser/editorExtensions';
+import { registerLanguageCommandNew } from 'vs/editor/browser/editorExtensions';
 import { Range } from 'vs/editor/common/core/range';
 import { Selection } from 'vs/editor/common/core/selection';
 import { ITextModel } from 'vs/editor/common/model';
@@ -116,7 +116,7 @@ function getCodeActionProviders(
 		});
 }
 
-registerLanguageCommand('_executeCodeActionProvider', async function (accessor, args): Promise<ReadonlyArray<CodeActiona>> {
+registerLanguageCommandNew('_executeCodeActionProvider', async function (accessor, args): Promise<ReadonlyArray<CodeActiona>> {
 	const { resource, range, kind } = args;
 	if (!(resource instanceof URI) || !Range.isIRange(range)) {
 		throw illegalArgument();

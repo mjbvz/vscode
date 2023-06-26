@@ -7,7 +7,7 @@ import { illegalArgument, onUnexpectedExternalError } from 'vs/base/common/error
 import { URI } from 'vs/base/common/uri';
 import { Range } from 'vs/editor/common/core/range';
 import { ITextModel } from 'vs/editor/common/model';
-import { registerLanguageCommand } from 'vs/editor/browser/editorExtensions';
+import { registerLanguageCommandNew } from 'vs/editor/browser/editorExtensions';
 import { DocumentSymbol, DocumentSymbolProviderRegistry } from 'vs/editor/common/modes';
 import { IModelService } from 'vs/editor/common/services/modelService';
 import { CancellationToken } from 'vs/base/common/cancellation';
@@ -65,7 +65,7 @@ function flatten(bucket: DocumentSymbol[], entries: DocumentSymbol[], overrideCo
 }
 
 
-registerLanguageCommand('_executeDocumentSymbolProvider', function (accessor, args) {
+registerLanguageCommandNew('_executeDocumentSymbolProvider', function (accessor, args) {
 	const { resource } = args;
 	if (!(resource instanceof URI)) {
 		throw illegalArgument('resource');

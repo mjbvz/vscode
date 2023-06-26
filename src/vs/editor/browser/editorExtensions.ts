@@ -238,7 +238,7 @@ export abstract class EditorAction extends EditorCommand {
 
 // --- Registration of commands and actions
 
-export function registerLanguageCommand(id: string, handler: (accessor: ServicesAccessor, args: { [n: string]: any }) => any) {
+export function registerLanguageCommandNew(id: string, handler: (accessor: ServicesAccessor, args: { [n: string]: any }) => any) {
 	CommandsRegistry.registerCommand(id, (accessor, args) => handler(accessor, args || {}));
 }
 
@@ -249,7 +249,7 @@ interface IDefaultArgs {
 }
 
 export function registerDefaultLanguageCommand(id: string, handler: (model: ITextModel, position: Position, args: IDefaultArgs) => any) {
-	registerLanguageCommand(id, function (accessor, args: IDefaultArgs) {
+	registerLanguageCommandNew(id, function (accessor, args: IDefaultArgs) {
 
 		const { resource, position } = args;
 		if (!(resource instanceof URI)) {

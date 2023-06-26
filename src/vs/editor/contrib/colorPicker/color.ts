@@ -6,7 +6,7 @@
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { illegalArgument } from 'vs/base/common/errors';
 import { URI } from 'vs/base/common/uri';
-import { registerLanguageCommand } from 'vs/editor/browser/editorExtensions';
+import { registerLanguageCommandNew } from 'vs/editor/browser/editorExtensions';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { ITextModel } from 'vs/editor/common/model';
 import { ColorProviderRegistry, DocumentColorProvider, IColorInformation, IColorPresentation } from 'vs/editor/common/modes';
@@ -36,7 +36,7 @@ export function getColorPresentations(model: ITextModel, colorInfo: IColorInform
 	return Promise.resolve(provider.provideColorPresentations(model, colorInfo, token));
 }
 
-registerLanguageCommand('_executeDocumentColorProvider', function (accessor, args) {
+registerLanguageCommandNew('_executeDocumentColorProvider', function (accessor, args) {
 
 	const { resource } = args;
 	if (!(resource instanceof URI)) {
@@ -62,7 +62,7 @@ registerLanguageCommand('_executeDocumentColorProvider', function (accessor, arg
 });
 
 
-registerLanguageCommand('_executeColorPresentationProvider', function (accessor, args) {
+registerLanguageCommandNew('_executeColorPresentationProvider', function (accessor, args) {
 
 	const { resource, color, range } = args;
 	if (!(resource instanceof URI) || !Array.isArray(color) || color.length !== 4 || !Range.isIRange(range)) {
