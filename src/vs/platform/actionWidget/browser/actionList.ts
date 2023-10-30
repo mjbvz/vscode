@@ -244,7 +244,6 @@ export class ActionList<T> extends Disposable {
 		const numHeaders = this._allMenuItems.filter(item => item.kind === 'header').length;
 		const itemsHeight = this._allMenuItems.length * this._actionLineHeight;
 		const heightWithHeaders = itemsHeight + numHeaders * this._headerLineHeight - numHeaders * this._actionLineHeight;
-		this._list.layout(heightWithHeaders);
 
 		// For finding width dynamically (not using resize observer)
 		const itemWidths: number[] = this._allMenuItems.map((_, index): number => {
