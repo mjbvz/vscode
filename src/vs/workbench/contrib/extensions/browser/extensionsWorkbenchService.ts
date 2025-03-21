@@ -659,7 +659,7 @@ class Extensions extends Disposable {
 		const extensions = await this.mapInstalledExtensionWithCompatibleGalleryExtension(galleryExtensions, productVersion);
 		for (const [extension, gallery] of extensions) {
 			// update metadata of the extension if it does not exist
-			if (extension.local && !extension.local.identifier.uuid) {
+			if (extension.local && extension.local.identifier.uuid !== gallery.identifier.uuid) {
 				extension.local = await this.updateMetadata(extension.local, gallery);
 			}
 			if (!extension.gallery || extension.gallery.version !== gallery.version || extension.gallery.properties.targetPlatform !== gallery.properties.targetPlatform) {
@@ -2479,7 +2479,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 		return extension;
 	}
 
-	async installInServer(extension: IExtension, server: IExtensionManagementServer): Promise<void> {
+	async installInServer(extension: IExtension, server: IExtensionManagementServer, installOptions?: InstallOptions): Promise<void> {
 		await this.doInstall(extension, async () => {
 			const local = extension.local;
 			if (!local) {
@@ -2489,7 +2489,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 				extension = (await this.getExtensions([{ ...extension.identifier, preRelease: local.preRelease }], CancellationToken.None))[0] ?? extension;
 			}
 			if (extension.gallery) {
-				return server.extensionManagementService.installFromGallery(extension.gallery, { installPreReleaseVersion: local.preRelease });
+				return server.extensionManagementService.installFromGallery(extension.gallery, { installPreReleaseVersion: local.preRelease, ...installOptions });
 			}
 
 			const targetPlatform = await server.extensionManagementService.getTargetPlatform();

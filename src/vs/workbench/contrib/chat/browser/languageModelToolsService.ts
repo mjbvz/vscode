@@ -14,6 +14,8 @@ import { Disposable, DisposableStore, dispose, IDisposable, toDisposable } from 
 import { LRUCache } from '../../../../base/common/map.js';
 import { Schemas } from '../../../../base/common/network.js';
 import { URI } from '../../../../base/common/uri.js';
+import { IAccessibilityService } from '../../../../platform/accessibility/common/accessibility.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IDialogService } from '../../../../platform/dialogs/common/dialogs.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
@@ -63,6 +65,8 @@ export class LanguageModelToolsService extends Disposable implements ILanguageMo
 		@IDialogService private readonly _dialogService: IDialogService,
 		@ITelemetryService private readonly _telemetryService: ITelemetryService,
 		@ILogService private readonly _logService: ILogService,
+		@IConfigurationService private readonly _configurationService: IConfigurationService,
+		@IAccessibilityService private readonly _accessibilityService: IAccessibilityService
 	) {
 		super();
 
@@ -232,13 +236,14 @@ export class LanguageModelToolsService extends Disposable implements ILanguageMo
 					await tool.impl.prepareToolInvocation(dto.parameters, token)
 					: undefined;
 
-				toolInvocation = new ChatToolInvocation(prepared, tool.data);
-				if (this._workspaceToolConfirmStore.value.getAutoConfirm(tool.data.id) || this._profileToolConfirmStore.value.getAutoConfirm(tool.data.id)) {
+				toolInvocation = new ChatToolInvocation(prepared, tool.data, dto.callId);
+				if (this.shouldAutoConfirm(tool.data.id, tool.data.runsInWorkspace)) {
 					toolInvocation.confirmed.complete(true);
 				}
 
 				model.acceptResponseProgress(request, toolInvocation);
 				if (prepared?.confirmationMessages) {
+					this._accessibilityService.alert(prepared.confirmationMessages.title);
 					const userConfirmed = await toolInvocation.confirmed.p;
 					if (!userConfirmed) {
 						throw new CancellationError();
@@ -296,6 +301,26 @@ export class LanguageModelToolsService extends Disposable implements ILanguageMo
 				this.cleanupCallDisposables(requestId, store);
 			}
 		}
+	}
+
+	private shouldAutoConfirm(toolId: string, runsInWorkspace: boolean | undefined): boolean {
+		if (this._workspaceToolConfirmStore.value.getAutoConfirm(toolId) || this._profileToolConfirmStore.value.getAutoConfirm(toolId) || this._memoryToolConfirmStore.has(toolId)) {
+			return true;
+		}
+
+		const config = this._configurationService.inspect<boolean | string[]>('chat.tools.autoApprove');
+
+		// If we know the tool runs at a global level, only consider the global config.
+		// If we know the tool runs at a workspace level, use those specific settings when appropriate.
+		let value = config.value ?? config.defaultValue;
+		if (typeof runsInWorkspace === 'boolean') {
+			value = config.userLocalValue ?? config.applicationValue;
+			if (runsInWorkspace) {
+				value = config.workspaceValue ?? config.workspaceFolderValue ?? config.userRemoteValue ?? value;
+			}
+		}
+
+		return value === true || (Array.isArray(value) && value.includes(toolId));
 	}
 
 	private cleanupCallDisposables(requestId: string, store: DisposableStore): void {
