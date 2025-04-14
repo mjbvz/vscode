@@ -82,13 +82,11 @@ export class ImplicitProjectConfiguration {
 	}
 
 	private static readCheckJs(configuration: vscode.WorkspaceConfiguration): boolean {
-		return configuration.get<boolean>('js/ts.implicitProjectConfig.checkJs')
-			?? configuration.get<boolean>('javascript.implicitProjectConfig.checkJs', false);
+		return configuration.get<boolean>('js/ts.implicitProjectConfig.checkJs', false);
 	}
 
 	private static readExperimentalDecorators(configuration: vscode.WorkspaceConfiguration): boolean {
-		return configuration.get<boolean>('js/ts.implicitProjectConfig.experimentalDecorators')
-			?? configuration.get<boolean>('javascript.implicitProjectConfig.experimentalDecorators', false);
+		return configuration.get<boolean>('js/ts.implicitProjectConfig.experimentalDecorators', false);
 	}
 
 	private static readImplicitStrictNullChecks(configuration: vscode.WorkspaceConfiguration): boolean {
@@ -206,14 +204,6 @@ export abstract class BaseServiceConfigurationProvider implements ServiceConfigu
 			case 'auto': return SyntaxServerConfiguration.Auto;
 		}
 
-		// Fallback to deprecated setting
-		const deprecatedValue = configuration.get<boolean | string>('typescript.tsserver.useSeparateSyntaxServer', true);
-		if (deprecatedValue === 'forAllRequests') { // Undocumented setting
-			return SyntaxServerConfiguration.Always;
-		}
-		if (deprecatedValue === true) {
-			return SyntaxServerConfiguration.Auto;
-		}
 		return SyntaxServerConfiguration.Never;
 	}
 
