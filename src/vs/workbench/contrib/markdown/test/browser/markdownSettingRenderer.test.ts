@@ -12,6 +12,9 @@ import { IContextMenuService } from '../../../../../platform/contextview/browser
 import { Registry } from '../../../../../platform/registry/common/platform.js';
 import { SimpleSettingRenderer } from '../../browser/markdownSettingRenderer.js';
 import { IPreferencesService } from '../../../../services/preferences/common/preferences.js';
+import { mock } from '../../../../test/common/workbenchTestServices.js';
+import { ITelemetryService } from '../../../../../platform/telemetry/common/telemetry.js';
+import { IClipboardService } from '../../../../../platform/clipboard/common/clipboardService.js';
 
 const configuration: IConfigurationNode = {
 	'id': 'examples',
@@ -69,8 +72,14 @@ suite('Markdown Setting Renderer Test', () => {
 		};
 		contextMenuService = <IContextMenuService>{};
 		Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfiguration(configuration);
-		// eslint-disable-next-line local/code-no-any-casts
-		settingRenderer = new SimpleSettingRenderer(configurationService, contextMenuService, preferencesService, { publicLog2: () => { } } as any, { writeText: async () => { } } as any);
+
+		const telemetryService = new class extends mock<ITelemetryService>() {
+			override publicLog2() { }
+		};
+		const clipboardService = new class extends mock<IClipboardService>() {
+			override async writeText() { }
+		};
+		settingRenderer = new SimpleSettingRenderer(configurationService, contextMenuService, preferencesService, telemetryService, clipboardService);
 	});
 
 	suiteTeardown(() => {
