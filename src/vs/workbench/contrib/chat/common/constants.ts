@@ -93,8 +93,8 @@ export namespace ChatAgentLocation {
  * List of file schemes that are always unsupported for use in chat
  */
 const chatAlwaysUnsupportedFileSchemes = new Set([
-	Schemas.vscodeChatEditor,
 	Schemas.walkThrough,
+	Schemas.vscodeChatEditor,
 	Schemas.vscodeChatSession,
 	Schemas.vscodeSettings,
 	Schemas.webviewPanel,

@@ -81,17 +81,17 @@ export namespace Schemas {
 	/** Scheme used for LHS of code compare (aka diff) blocks in chat. */
 	export const vscodeChatCodeCompareBlock = 'vscode-chat-code-compare-block';
 
-	/** Scheme used for the chat input editor. */
-	export const vscodeChatEditor = 'vscode-chat-editor';
-
-	/** Scheme used for the chat input part */
+	/** Scheme used for the input box in chats */
 	export const vscodeChatInput = 'chatSessionInput';
 
+	/** Scheme used to identify chat editor for local sessions. */
+	export const vscodeChatEditor = 'vscode-chat-editor';
+
 	/**
-	 * Scheme for chat session content
+	 * Legacy scheme used for chat sessions.
 	 *
-	 * @deprecated
-	 * */
+	 * @deprecated Use { @linkcode vscodeChatEditor } or session specific schemes instead.
+	 */
 	export const vscodeChatSession = 'vscode-chat-session';
 
 	/**
