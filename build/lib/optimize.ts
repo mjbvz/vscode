@@ -17,6 +17,9 @@ import fancyLog from 'fancy-log';
 import ansiColors from 'ansi-colors';
 import { getTargetStringFromTsConfig } from './tsconfigUtils.js';
 import svgmin from 'gulp-svgmin';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 
 declare module 'gulp-sourcemaps' {
 	interface WriteOptions {
@@ -94,7 +97,7 @@ function bundleESMTask(opts: IBundleESMTaskOpts): NodeJS.ReadWriteStream {
 
 			// TS Boilerplate
 			if (!opts.skipTSBoilerplateRemoval?.(entryPoint.name)) {
-				const tslibPath = path.join(new URL(import.meta.resolve('tslib')).pathname, '../tslib.es6.js');
+				const tslibPath = path.join(require.resolve('tslib'), '../tslib.es6.js');
 				banner.js += await fs.promises.readFile(tslibPath, 'utf-8');
 			}
 
