@@ -101,20 +101,20 @@ steps:
     displayName: Install dependencies
     condition: and(succeeded(), ne(variables.NODE_MODULES_RESTORED, 'true'))
 
-  - powershell: npm run _node-build-script build/azure-pipelines/distro/mixin-npm.js
+  - powershell: npm run _build-script build/azure-pipelines/distro/mixin-npm.js
     condition: and(succeeded(), ne(variables.NODE_MODULES_RESTORED, 'true'))
     displayName: Mixin distro node modules
 
   - powershell: |
       . build/azure-pipelines/win32/exec.ps1
       $ErrorActionPreference = "Stop"
-      exec { npm run _node-build-script build/azure-pipelines/common/listNodeModules.js .build/node_modules_list.txt }
+      exec { npm run _build-script build/azure-pipelines/common/listNodeModules.js .build/node_modules_list.txt }
       exec { mkdir -Force .build/node_modules_cache }
       exec { 7z.exe a .build/node_modules_cache/cache.7z -mx3 `@.build/node_modules_list.txt }
     condition: and(succeeded(), ne(variables.NODE_MODULES_RESTORED, 'true'))
     displayName: Create node_modules archive
 
-  - powershell: npm run _node-build-script build/azure-pipelines/distro/mixin-quality.js
+  - powershell: npm run _build-script build/azure-pipelines/distro/mixin-quality.js
     displayName: Mixin distro quality
 
   - template: ../../common/install-builtin-extensions.yml@self
@@ -125,7 +125,7 @@ steps:
       retryCountOnTaskFailure: 3
 
   - ${{ if and(ne(parameters.VSCODE_CIBUILD, true), ne(parameters.VSCODE_QUALITY, 'exploration')) }}:
-    - powershell: npm run _node-build-script build/win32/explorer-dll-fetcher.js .build/win32/appx
+    - powershell: npm run _build-script build/win32/explorer-dll-fetcher.js .build/win32/appx
       displayName: Download Explorer dll
 
   - powershell: |

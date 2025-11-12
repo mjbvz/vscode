@@ -257,7 +257,7 @@
 		},
 		{
 			"type": "shell",
-			"command": "npm run _node-build-script build/lib/preLaunch.js",
+			"command": "npm run _build-script build/lib/preLaunch.js",
 			"label": "Ensure Prelaunch Dependencies",
 			"presentation": {
 				"reveal": "silent",

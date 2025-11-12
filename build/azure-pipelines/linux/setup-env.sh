@@ -33,7 +33,7 @@ if [ "$npm_config_arch" == "x64" ]; then
   VSCODE_LIBCXX_HEADERS_DIR=$PWD/.build/libcxx_headers  \
   VSCODE_LIBCXXABI_HEADERS_DIR=$PWD/.build/libcxxabi_headers \
   VSCODE_ARCH="$npm_config_arch" \
-  npm run _node-build-script build/linux/libcxx-fetcher.js
+  npm run _build-script build/linux/libcxx-fetcher.js
 
   # Set compiler toolchain
   # Flags for the client build are based on
