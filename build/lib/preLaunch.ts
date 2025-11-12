@@ -6,9 +6,6 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const rootDir = path.resolve(import.meta.dirname, '..', '..');
 
@@ -51,7 +48,7 @@ async function main() {
 	await ensureCompiled();
 
 	// Can't require this until after dependencies are installed
-	const { getBuiltInExtensions } = require('./builtInExtensions');
+	const { getBuiltInExtensions } = await import('./builtInExtensions.js');
 	await getBuiltInExtensions();
 }
 
