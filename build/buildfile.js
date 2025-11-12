@@ -6,7 +6,7 @@
 
 /**
  * @param {string} name
- * @returns {import('./lib/bundle').IEntryPoint}
+ * @returns {import('./lib/bundle.js').IEntryPoint}
  */
 export function createModuleDescription(name) {
 	return {
