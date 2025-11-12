@@ -9,6 +9,8 @@ import vfs from 'vinyl-fs';
 import filter from 'gulp-filter';
 import * as util from './util.js';
 import { getVersion } from './getVersion.js';
+import electron from '@vscode/gulp-electron';
+import json from 'gulp-json-editor';
 
 type DarwinDocumentSuffix = 'document' | 'script' | 'file' | 'source code';
 type DarwinDocumentType = {
@@ -205,9 +207,6 @@ export const config = {
 
 function getElectron(arch: string): () => NodeJS.ReadWriteStream {
 	return () => {
-		const electron = require('@vscode/gulp-electron');
-		const json = require('gulp-json-editor') as typeof import('gulp-json-editor');
-
 		const electronOpts = {
 			...config,
 			platform: process.platform,
