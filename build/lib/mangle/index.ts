@@ -6,7 +6,6 @@
 import v8 from 'node:v8';
 import fs from 'fs';
 import path from 'path';
-import { argv } from 'process';
 import { Mapping, SourceMapGenerator } from 'source-map';
 import ts from 'typescript';
 import { pathToFileURL } from 'url';
