@@ -20,7 +20,8 @@ function eslint() {
 		).pipe(es.through(function () { /* noop, important for the stream to end */ }));
 }
 
-if (import.meta.filename === process.argv[1]) {
+const normalizeScriptPath = (/** @type {string} */ p) => p.replace(/\.(js|ts)$/, '');
+if (normalizeScriptPath(import.meta.filename) === normalizeScriptPath(process.argv[1])) {
 	eslint().on('error', (err) => {
 		console.error();
 		console.error(err);

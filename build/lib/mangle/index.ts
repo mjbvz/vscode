@@ -774,6 +774,7 @@ async function _run() {
 	}
 }
 
-if (import.meta.filename === argv[1]) {
+const normalizeScriptPath = (p: string) => p.replace(/\.(js|ts)$/, '');
+if (normalizeScriptPath(import.meta.filename) === normalizeScriptPath(process.argv[1])) {
 	_run();
 }

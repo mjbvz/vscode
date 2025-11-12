@@ -51,6 +51,7 @@ export function getProductionDependencies(folderPath: string): string[] {
 	return [...new Set(result)];
 }
 
-if (import.meta.filename === process.argv[1]) {
+const normalizeScriptPath = (p: string) => p.replace(/\.(js|ts)$/, '');
+if (normalizeScriptPath(import.meta.filename) === normalizeScriptPath(process.argv[1])) {
 	console.log(JSON.stringify(getProductionDependencies(root), null, '  '));
 }

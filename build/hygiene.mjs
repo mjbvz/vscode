@@ -269,7 +269,8 @@ function createGitIndexVinyls(paths) {
 }
 
 // this allows us to run hygiene as a git pre-commit hook
-if (import.meta.filename === process.argv[1]) {
+const normalizeScriptPath = (/** @type {string} */ p) => p.replace(/\.(js|ts)$/, '');
+if (normalizeScriptPath(import.meta.filename) === normalizeScriptPath(process.argv[1])) {
 	process.on('unhandledRejection', (reason, p) => {
 		console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
 		process.exit(1);
