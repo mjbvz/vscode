@@ -334,7 +334,7 @@ suite('LocalAgentsSessionsController', () => {
 		return runWithFakedTimers({}, async () => {
 			const controller = createController();
 
-			const sessionResource = LocalChatSessionUri.forSession('test-session');
+			const sessionResource = LocalChatSessionUri.fromId('test-session');
 			const mockModel = createMockChatModel({
 				sessionResource,
 				hasRequests: true,
@@ -363,7 +363,7 @@ suite('LocalAgentsSessionsController', () => {
 		return runWithFakedTimers({}, async () => {
 			const controller = createController();
 
-			const sessionResource = LocalChatSessionUri.forSession('history-session');
+			const sessionResource = LocalChatSessionUri.fromId('history-session');
 
 			mockChatService.setLiveSessionItems([]);
 			mockChatService.setHistorySessionItems([{
@@ -386,7 +386,7 @@ suite('LocalAgentsSessionsController', () => {
 		return runWithFakedTimers({}, async () => {
 			const controller = createController();
 
-			const sessionResource = LocalChatSessionUri.forSession('duplicate-session');
+			const sessionResource = LocalChatSessionUri.fromId('duplicate-session');
 			const mockModel = createMockChatModel({
 				sessionResource,
 				hasRequests: true
@@ -422,7 +422,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('in-progress-session');
+				const sessionResource = LocalChatSessionUri.fromId('in-progress-session');
 				const mockModel = createMockChatModel({
 					sessionResource,
 					hasRequests: true,
@@ -450,7 +450,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('completed-session');
+				const sessionResource = LocalChatSessionUri.fromId('completed-session');
 				const mockModel = createMockChatModel({
 					sessionResource,
 					hasRequests: true,
@@ -481,7 +481,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('canceled-session');
+				const sessionResource = LocalChatSessionUri.fromId('canceled-session');
 				const mockModel = createMockChatModel({
 					sessionResource,
 					hasRequests: true,
@@ -511,7 +511,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('error-session');
+				const sessionResource = LocalChatSessionUri.fromId('error-session');
 				const mockModel = createMockChatModel({
 					sessionResource,
 					hasRequests: true,
@@ -543,7 +543,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('stats-session');
+				const sessionResource = LocalChatSessionUri.fromId('stats-session');
 				const mockModel = createMockChatModel({
 					sessionResource,
 					hasRequests: true,
@@ -595,7 +595,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('no-stats-session');
+				const sessionResource = LocalChatSessionUri.fromId('no-stats-session');
 				const mockModel = createMockChatModel({
 					sessionResource,
 					hasRequests: true,
@@ -634,7 +634,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('timing-session');
+				const sessionResource = LocalChatSessionUri.fromId('timing-session');
 				const modelTimestamp = Date.now() - 5000;
 				const mockModel = createMockChatModel({
 					sessionResource,
@@ -663,7 +663,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('history-timing');
+				const sessionResource = LocalChatSessionUri.fromId('history-timing');
 				const lastMessageDate = Date.now() - 10000;
 
 				mockChatService.setLiveSessionItems([]);
@@ -687,7 +687,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('endtime-session');
+				const sessionResource = LocalChatSessionUri.fromId('endtime-session');
 				const completedAt = Date.now() - 1000;
 				const mockModel = createMockChatModel({
 					sessionResource,
@@ -719,7 +719,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('icon-session');
+				const sessionResource = LocalChatSessionUri.fromId('icon-session');
 				const mockModel = createMockChatModel({
 					sessionResource,
 					hasRequests: true
@@ -748,7 +748,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('progress-session');
+				const sessionResource = LocalChatSessionUri.fromId('progress-session');
 				const mockModel = createMockChatModel({
 					sessionResource,
 					hasRequests: true,
@@ -774,7 +774,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('status-change-session');
+				const sessionResource = LocalChatSessionUri.fromId('status-change-session');
 				const mockModel = createMockChatModel({
 					sessionResource,
 					hasRequests: true,
@@ -800,7 +800,7 @@ suite('LocalAgentsSessionsController', () => {
 			return runWithFakedTimers({}, async () => {
 				const controller = createController();
 
-				const sessionResource = LocalChatSessionUri.forSession('cleanup-session');
+				const sessionResource = LocalChatSessionUri.fromId('cleanup-session');
 				const mockModel = createMockChatModel({
 					sessionResource,
 					hasRequests: true

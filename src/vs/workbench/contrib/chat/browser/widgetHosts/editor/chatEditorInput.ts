@@ -348,7 +348,7 @@ export class ChatEditorInputSerializer implements IEditorSerializer {
 			// Otherwise check to see if we're a chat editor with a local session id
 			let resource = URI.revive(parsed.resource);
 			if (resource.scheme === Schemas.vscodeChatEditor && parsed.sessionId) {
-				resource = LocalChatSessionUri.forSession(parsed.sessionId);
+				resource = LocalChatSessionUri.fromId(parsed.sessionId);
 			}
 
 			return instantiationService.createInstance(ChatEditorInput, resource, parsed.options);

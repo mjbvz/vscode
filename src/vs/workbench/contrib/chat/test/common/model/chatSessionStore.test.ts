@@ -137,7 +137,7 @@ suite('ChatSessionStore', () => {
 
 	test('storeSessions persists session to index', async () => {
 		const store = createChatSessionStore();
-		const model = testDisposables.add(createMockChatModel(LocalChatSessionUri.forSession('session-1')));
+		const model = testDisposables.add(createMockChatModel(LocalChatSessionUri.fromId('session-1')));
 
 		await store.storeSessions([model]);
 
@@ -149,7 +149,7 @@ suite('ChatSessionStore', () => {
 
 	test('storeSessions persists custom title', async () => {
 		const store = createChatSessionStore();
-		const model = testDisposables.add(createMockChatModel(LocalChatSessionUri.forSession('session-1'), { customTitle: 'My Custom Title' }));
+		const model = testDisposables.add(createMockChatModel(LocalChatSessionUri.fromId('session-1'), { customTitle: 'My Custom Title' }));
 
 		await store.storeSessions([model]);
 
@@ -159,7 +159,7 @@ suite('ChatSessionStore', () => {
 
 	test('readSession returns stored session data', async () => {
 		const store = createChatSessionStore();
-		const model = testDisposables.add(createMockChatModel(LocalChatSessionUri.forSession('session-1')));
+		const model = testDisposables.add(createMockChatModel(LocalChatSessionUri.fromId('session-1')));
 
 		await store.storeSessions([model]);
 		const session = await store.readSession('session-1');
@@ -170,7 +170,7 @@ suite('ChatSessionStore', () => {
 
 	test('deleteSession removes session from index', async () => {
 		const store = createChatSessionStore();
-		const model = testDisposables.add(createMockChatModel(LocalChatSessionUri.forSession('session-1')));
+		const model = testDisposables.add(createMockChatModel(LocalChatSessionUri.fromId('session-1')));
 
 		await store.storeSessions([model]);
 		assert.strictEqual(store.hasSessions(), true);
@@ -184,8 +184,8 @@ suite('ChatSessionStore', () => {
 
 	test('clearAllSessions removes all sessions', async () => {
 		const store = createChatSessionStore();
-		const model1 = testDisposables.add(createMockChatModel(LocalChatSessionUri.forSession('session-1')));
-		const model2 = testDisposables.add(createMockChatModel(LocalChatSessionUri.forSession('session-2')));
+		const model1 = testDisposables.add(createMockChatModel(LocalChatSessionUri.fromId('session-1')));
+		const model2 = testDisposables.add(createMockChatModel(LocalChatSessionUri.fromId('session-2')));
 
 		await store.storeSessions([model1, model2]);
 		assert.strictEqual(Object.keys(await store.getIndex()).length, 2);
@@ -198,7 +198,7 @@ suite('ChatSessionStore', () => {
 
 	test('setSessionTitle updates existing session title', async () => {
 		const store = createChatSessionStore();
-		const model = testDisposables.add(createMockChatModel(LocalChatSessionUri.forSession('session-1'), { customTitle: 'Original Title' }));
+		const model = testDisposables.add(createMockChatModel(LocalChatSessionUri.fromId('session-1'), { customTitle: 'Original Title' }));
 
 		await store.storeSessions([model]);
 		await store.setSessionTitle('session-1', 'New Title');
@@ -266,7 +266,7 @@ suite('ChatSessionStore', () => {
 		test('storeTransferSession stores and retrieves transfer data', async () => {
 			const folderUri = URI.file('/test/workspace');
 			const store = createChatSessionStoreWithSingleFolder(folderUri);
-			const sessionResource = LocalChatSessionUri.forSession('transfer-session');
+			const sessionResource = LocalChatSessionUri.fromId('transfer-session');
 			const model = testDisposables.add(createMockChatModel(sessionResource));
 
 			const transferData = createTransferData(folderUri, sessionResource);
@@ -280,7 +280,7 @@ suite('ChatSessionStore', () => {
 		test('readTransferredSession returns session data', async () => {
 			const folderUri = URI.file('/test/workspace');
 			const store = createChatSessionStoreWithSingleFolder(folderUri);
-			const sessionResource = LocalChatSessionUri.forSession('transfer-session');
+			const sessionResource = LocalChatSessionUri.fromId('transfer-session');
 			const model = testDisposables.add(createMockChatModel(sessionResource));
 
 			const transferData = createTransferData(folderUri, sessionResource);
@@ -294,7 +294,7 @@ suite('ChatSessionStore', () => {
 		test('readTransferredSession cleans up after reading', async () => {
 			const folderUri = URI.file('/test/workspace');
 			const store = createChatSessionStoreWithSingleFolder(folderUri);
-			const sessionResource = LocalChatSessionUri.forSession('transfer-session');
+			const sessionResource = LocalChatSessionUri.fromId('transfer-session');
 			const model = testDisposables.add(createMockChatModel(sessionResource));
 
 			const transferData = createTransferData(folderUri, sessionResource);
@@ -311,7 +311,7 @@ suite('ChatSessionStore', () => {
 		test('getTransferredSessionData returns undefined for expired transfer', async () => {
 			const folderUri = URI.file('/test/workspace');
 			const store = createChatSessionStoreWithSingleFolder(folderUri);
-			const sessionResource = LocalChatSessionUri.forSession('transfer-session');
+			const sessionResource = LocalChatSessionUri.fromId('transfer-session');
 			const model = testDisposables.add(createMockChatModel(sessionResource));
 
 			// Create transfer with timestamp 10 minutes in the past (expired)
@@ -326,7 +326,7 @@ suite('ChatSessionStore', () => {
 		test('expired transfer cleans up index and file', async () => {
 			const folderUri = URI.file('/test/workspace');
 			const store = createChatSessionStoreWithSingleFolder(folderUri);
-			const sessionResource = LocalChatSessionUri.forSession('transfer-session');
+			const sessionResource = LocalChatSessionUri.fromId('transfer-session');
 			const model = testDisposables.add(createMockChatModel(sessionResource));
 
 			// Create transfer with timestamp 100 minutes in the past (expired)
@@ -356,7 +356,7 @@ suite('ChatSessionStore', () => {
 			const fileService = instantiationService.get(IFileService);
 
 			// Store first session
-			const session1Resource = LocalChatSessionUri.forSession('transfer-session-1');
+			const session1Resource = LocalChatSessionUri.fromId('transfer-session-1');
 			const model1 = testDisposables.add(createMockChatModel(session1Resource));
 			const transferData1 = createTransferData(folderUri, session1Resource);
 			await store.storeTransferSession(transferData1, model1);
@@ -372,7 +372,7 @@ suite('ChatSessionStore', () => {
 			assert.strictEqual(exists1, true, 'First session file should exist');
 
 			// Store second session for the same workspace
-			const session2Resource = LocalChatSessionUri.forSession('transfer-session-2');
+			const session2Resource = LocalChatSessionUri.fromId('transfer-session-2');
 			const model2 = testDisposables.add(createMockChatModel(session2Resource));
 			const transferData2 = createTransferData(folderUri, session2Resource);
 			await store.storeTransferSession(transferData2, model2);
@@ -403,7 +403,7 @@ suite('ChatSessionStore', () => {
 
 			// Create store with empty window
 			const store = createChatSessionStore(true);
-			const model = testDisposables.add(createMockChatModel(LocalChatSessionUri.forSession('session-1')));
+			const model = testDisposables.add(createMockChatModel(LocalChatSessionUri.fromId('session-1')));
 
 			// Store a session in empty window
 			await store.storeSessions([model]);

@@ -1097,7 +1097,7 @@ export class RunInTerminalTool extends Disposable implements IToolImpl {
 					const association = associations[instance.processId];
 					if (association) {
 						// Convert stored string ID to URI for backward compatibility
-						const chatSessionResource = LocalChatSessionUri.forSession(association.sessionId);
+						const chatSessionResource = LocalChatSessionUri.fromId(association.sessionId);
 						this._logService.debug(`RunInTerminalTool: Restored terminal association for PID ${instance.processId}, session ${association.sessionId}`);
 						const toolTerminal: IToolTerminal = {
 							instance,

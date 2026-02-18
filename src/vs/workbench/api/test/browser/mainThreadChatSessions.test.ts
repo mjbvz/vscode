@@ -87,7 +87,7 @@ suite('ObservableChatSession', function () {
 	}
 
 	async function createInitializedSession(sessionContent: any, sessionId = 'test-id'): Promise<ObservableChatSession> {
-		const resource = LocalChatSessionUri.forSession(sessionId);
+		const resource = LocalChatSessionUri.fromId(sessionId);
 		const session = new ObservableChatSession(resource, 1, proxy, logService, dialogService);
 		(proxy.$provideChatSessionContent as sinon.SinonStub).resolves(sessionContent);
 		await session.initialize(CancellationToken.None);
@@ -96,7 +96,7 @@ suite('ObservableChatSession', function () {
 
 	test('constructor creates session with proper initial state', function () {
 		const sessionId = 'test-id';
-		const resource = LocalChatSessionUri.forSession(sessionId);
+		const resource = LocalChatSessionUri.fromId(sessionId);
 		const session = disposables.add(new ObservableChatSession(resource, 1, proxy, logService, dialogService));
 
 		assert.strictEqual(session.providerHandle, 1);
@@ -111,7 +111,7 @@ suite('ObservableChatSession', function () {
 
 	test('session queues progress before initialization and processes it after', async function () {
 		const sessionId = 'test-id';
-		const resource = LocalChatSessionUri.forSession(sessionId);
+		const resource = LocalChatSessionUri.fromId(sessionId);
 		const session = disposables.add(new ObservableChatSession(resource, 1, proxy, logService, dialogService));
 
 		const progress1: IChatProgress = { kind: 'progressMessage', content: { value: 'Hello', isTrusted: false } };
@@ -162,7 +162,7 @@ suite('ObservableChatSession', function () {
 
 	test('initialization is idempotent and returns same promise', async function () {
 		const sessionId = 'test-id';
-		const resource = LocalChatSessionUri.forSession(sessionId);
+		const resource = LocalChatSessionUri.fromId(sessionId);
 		const session = disposables.add(new ObservableChatSession(resource, 1, proxy, logService, dialogService));
 
 		const sessionContent = createSessionContent();
@@ -230,7 +230,7 @@ suite('ObservableChatSession', function () {
 
 		const request: IChatAgentRequest = {
 			requestId: 'req1',
-			sessionResource: LocalChatSessionUri.forSession('test-session'),
+			sessionResource: LocalChatSessionUri.fromId('test-session'),
 			agentId: 'test-agent',
 			message: 'Test prompt',
 			location: ChatAgentLocation.Chat,
@@ -251,7 +251,7 @@ suite('ObservableChatSession', function () {
 
 		const request: IChatAgentRequest = {
 			requestId: 'req1',
-			sessionResource: LocalChatSessionUri.forSession('test-session'),
+			sessionResource: LocalChatSessionUri.fromId('test-session'),
 			agentId: 'test-agent',
 			message: 'Test prompt',
 			location: ChatAgentLocation.Chat,
@@ -290,7 +290,7 @@ suite('ObservableChatSession', function () {
 
 	test('dispose properly cleans up resources and notifies listeners', function () {
 		const sessionId = 'test-id';
-		const resource = LocalChatSessionUri.forSession(sessionId);
+		const resource = LocalChatSessionUri.fromId(sessionId);
 		const session = disposables.add(new ObservableChatSession(resource, 1, proxy, logService, dialogService));
 
 		let disposeEventFired = false;

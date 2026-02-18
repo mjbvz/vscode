@@ -277,7 +277,7 @@ export class ChatViewPane extends ViewPane implements IViewWelcomeDelegate {
 			return this.viewState.sessionResource;
 		}
 
-		return this.viewState.sessionId ? LocalChatSessionUri.forSession(this.viewState.sessionId) : undefined;
+		return this.viewState.sessionId ? LocalChatSessionUri.fromId(this.viewState.sessionId) : undefined;
 	}
 
 	protected override renderBody(parent: HTMLElement): void {

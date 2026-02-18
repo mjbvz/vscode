@@ -349,7 +349,7 @@ export class ChatService extends Disposable implements IChatService {
 					// Noop
 				}
 			}
-			sessionResource ??= LocalChatSessionUri.forSession(session.sessionId);
+			sessionResource ??= LocalChatSessionUri.fromId(session.sessionId);
 
 			const sessionRef = await this.getOrRestoreSession(sessionResource);
 			if (sessionRef?.object.editingSession) {
@@ -401,9 +401,9 @@ export class ChatService extends Disposable implements IChatService {
 		const index = await this._chatSessionStore.getIndex();
 		return Object.values(index)
 			.filter(entry => !entry.isExternal)
-			.filter(entry => !this._sessionModels.has(LocalChatSessionUri.forSession(entry.sessionId)) && entry.initialLocation === ChatAgentLocation.Chat && !entry.isEmpty)
+			.filter(entry => !this._sessionModels.has(LocalChatSessionUri.fromId(entry.sessionId)) && entry.initialLocation === ChatAgentLocation.Chat && !entry.isEmpty)
 			.map((entry): IChatDetail => {
-				const sessionResource = LocalChatSessionUri.forSession(entry.sessionId);
+				const sessionResource = LocalChatSessionUri.fromId(entry.sessionId);
 				return ({
 					...entry,
 					sessionResource,
@@ -442,7 +442,7 @@ export class ChatService extends Disposable implements IChatService {
 	startSession(location: ChatAgentLocation, options?: IChatSessionStartOptions): IChatModelReference {
 		this.trace('startSession');
 		const sessionId = generateUuid();
-		const sessionResource = LocalChatSessionUri.forSession(sessionId);
+		const sessionResource = LocalChatSessionUri.fromId(sessionId);
 		return this._sessionModels.acquireOrCreate({
 			initialData: undefined,
 			location,
@@ -553,7 +553,7 @@ export class ChatService extends Disposable implements IChatService {
 
 	loadSessionFromContent(data: IExportableChatData | ISerializableChatData): IChatModelReference | undefined {
 		const sessionId = (data as ISerializableChatData).sessionId ?? generateUuid();
-		const sessionResource = LocalChatSessionUri.forSession(sessionId);
+		const sessionResource = LocalChatSessionUri.fromId(sessionId);
 		return this._sessionModels.acquireOrCreate({
 			initialData: { value: data, serializer: new ChatSessionOperationLog() },
 			location: data.initialLocation ?? ChatAgentLocation.Chat,

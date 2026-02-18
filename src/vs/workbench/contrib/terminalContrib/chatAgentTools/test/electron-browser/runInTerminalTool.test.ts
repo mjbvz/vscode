@@ -1149,7 +1149,7 @@ suite('RunInTerminalTool', () => {
 			let terminalDisposed = false;
 			mockTerminal.dispose = () => { terminalDisposed = true; };
 
-			const sessionResource = LocalChatSessionUri.forSession(sessionId);
+			const sessionResource = LocalChatSessionUri.fromId(sessionId);
 			runInTerminalTool.sessionTerminalAssociations.set(sessionResource, {
 				instance: mockTerminal,
 				shellIntegrationQuality: ShellIntegrationQuality.None
@@ -1182,8 +1182,8 @@ suite('RunInTerminalTool', () => {
 			mockTerminal1.dispose = () => { terminal1Disposed = true; };
 			mockTerminal2.dispose = () => { terminal2Disposed = true; };
 
-			const sessionResource1 = LocalChatSessionUri.forSession(sessionId1);
-			const sessionResource2 = LocalChatSessionUri.forSession(sessionId2);
+			const sessionResource1 = LocalChatSessionUri.fromId(sessionId1);
+			const sessionResource2 = LocalChatSessionUri.fromId(sessionId2);
 			runInTerminalTool.sessionTerminalAssociations.set(sessionResource1, {
 				instance: mockTerminal1,
 				shellIntegrationQuality: ShellIntegrationQuality.None
@@ -1206,7 +1206,7 @@ suite('RunInTerminalTool', () => {
 
 		test('should handle disposal of non-existent session gracefully', () => {
 			strictEqual(runInTerminalTool.sessionTerminalAssociations.size, 0, 'No associations should exist initially');
-			chatServiceDisposeEmitter.fire({ sessionResource: [LocalChatSessionUri.forSession('non-existent-session')], reason: 'cleared' });
+			chatServiceDisposeEmitter.fire({ sessionResource: [LocalChatSessionUri.fromId('non-existent-session')], reason: 'cleared' });
 			strictEqual(runInTerminalTool.sessionTerminalAssociations.size, 0, 'No associations should exist after handling non-existent session');
 		});
 	});
@@ -1279,7 +1279,7 @@ suite('RunInTerminalTool', () => {
 	suite('session auto approval', () => {
 		test('should auto approve all commands when session has auto approval enabled', async () => {
 			const sessionId = 'test-session-123';
-			const sessionResource = LocalChatSessionUri.forSession(sessionId);
+			const sessionResource = LocalChatSessionUri.fromId(sessionId);
 			const terminalChatService = instantiationService.get(ITerminalChatService);
 
 			const context: IToolInvocationPreparationContext = {

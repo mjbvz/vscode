@@ -2131,12 +2131,12 @@ export class ChatModel extends Disposable implements IChatModel {
 		} else if (isValidFullData) {
 			// Otherwise use the serialized id. This is only valid for local chat sessions
 			this._sessionId = initialData.sessionId;
-			this._sessionResource = LocalChatSessionUri.forSession(initialData.sessionId);
+			this._sessionResource = LocalChatSessionUri.fromId(initialData.sessionId);
 		} else {
 			// Finally fall back to generating a new id for a local session. This is used in the case where a
 			// chat has been exported (but not serialized)
 			this._sessionId = generateUuid();
-			this._sessionResource = LocalChatSessionUri.forSession(this._sessionId);
+			this._sessionResource = LocalChatSessionUri.fromId(this._sessionId);
 		}
 
 		this._disableBackgroundKeepAlive = initialModelProps.disableBackgroundKeepAlive ?? false;
@@ -2781,7 +2781,7 @@ export namespace ChatResponseResource {
 			sessionResource = URI.parse(decodeHex(uri.authority).toString());
 		} catch (e) {
 			if (e instanceof SyntaxError) { // pre-1.108 local session ID
-				sessionResource = LocalChatSessionUri.forSession(uri.authority);
+				sessionResource = LocalChatSessionUri.fromId(uri.authority);
 			} else {
 				throw e;
 			}

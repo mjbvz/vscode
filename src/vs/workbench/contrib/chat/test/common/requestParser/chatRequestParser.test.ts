@@ -26,7 +26,7 @@ import { MockChatService } from '../chatService/mockChatService.js';
 import { MockChatVariablesService } from '../mockChatVariables.js';
 import { MockPromptsService } from '../promptSyntax/service/mockPromptsService.js';
 
-const testSessionUri = LocalChatSessionUri.forSession('test-session');
+const testSessionUri = LocalChatSessionUri.fromId('test-session');
 
 suite('ChatRequestParser', () => {
 	const testDisposables = ensureNoDisposablesAreLeakedInTestSuite();

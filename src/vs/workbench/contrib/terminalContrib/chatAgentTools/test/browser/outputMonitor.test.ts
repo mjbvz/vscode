@@ -45,7 +45,7 @@ suite('OutputMonitor', () => {
 				// eslint-disable-next-line local/code-no-any-casts
 				registerMarker: () => ({ id: 1 } as any)
 			},
-			sessionResource: LocalChatSessionUri.forSession('1')
+			sessionResource: LocalChatSessionUri.fromId('1')
 		};
 		instantiationService = new TestInstantiationService();
 
@@ -362,5 +362,5 @@ suite('OutputMonitor', () => {
 
 });
 function createTestContext(id: string): IToolInvocationContext {
-	return { sessionResource: LocalChatSessionUri.forSession(id) };
+	return { sessionResource: LocalChatSessionUri.fromId(id) };
 }

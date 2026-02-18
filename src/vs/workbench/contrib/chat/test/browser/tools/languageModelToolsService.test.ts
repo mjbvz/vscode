@@ -77,7 +77,7 @@ function registerToolForTest(service: LanguageModelToolsService, store: any, id:
 			tokenBudget: 100,
 			parameters,
 			context: context ? {
-				sessionResource: LocalChatSessionUri.forSession(context.sessionId),
+				sessionResource: LocalChatSessionUri.fromId(context.sessionId),
 			} : undefined,
 		}),
 	};
@@ -88,7 +88,7 @@ function stubGetSession(chatService: MockChatService, sessionId: string, options
 	const capture = options?.capture;
 	const fakeModel = {
 		sessionId,
-		sessionResource: LocalChatSessionUri.forSession(sessionId),
+		sessionResource: LocalChatSessionUri.fromId(sessionId),
 		getRequests: () => [{ id: requestId, modelId: 'test-model' }],
 	} as ChatModel;
 	chatService.addSession(fakeModel);
@@ -2726,7 +2726,7 @@ suite('LanguageModelToolsService', () => {
 			toolCallId: 'call-123',
 			toolId: tool.id,
 			chatRequestId: requestId,
-			sessionResource: LocalChatSessionUri.forSession(sessionId),
+			sessionResource: LocalChatSessionUri.fromId(sessionId),
 		});
 
 		assert.ok(invocation, 'beginToolCall should return an invocation');
@@ -2763,7 +2763,7 @@ suite('LanguageModelToolsService', () => {
 			toolCallId: 'call-stream',
 			toolId: tool.id,
 			chatRequestId: requestId,
-			sessionResource: LocalChatSessionUri.forSession(sessionId),
+			sessionResource: LocalChatSessionUri.fromId(sessionId),
 		});
 
 		assert.ok(invocation, 'should create invocation');
@@ -2889,7 +2889,7 @@ suite('LanguageModelToolsService', () => {
 			toolCallId: 'stream-call-id',
 			toolId: tool.id,
 			chatRequestId: requestId,
-			sessionResource: LocalChatSessionUri.forSession(sessionId),
+			sessionResource: LocalChatSessionUri.fromId(sessionId),
 		});
 
 		assert.ok(streamingInvocation, 'should create streaming invocation');
@@ -2901,7 +2901,7 @@ suite('LanguageModelToolsService', () => {
 			tokenBudget: 100,
 			parameters: { test: 1 },
 			context: {
-				sessionResource: LocalChatSessionUri.forSession(sessionId),
+				sessionResource: LocalChatSessionUri.fromId(sessionId),
 			},
 			chatStreamToolCallId: 'stream-call-id', // This should correlate
 		};

@@ -18,14 +18,14 @@ export namespace LocalChatSessionUri {
 
 	export const scheme = Schemas.vscodeLocalChatSession;
 
-	export function forSession(sessionId: string): URI {
+	export function fromId(sessionId: string): URI {
 		const encodedId = encodeBase64(VSBuffer.wrap(new TextEncoder().encode(sessionId)), false, true);
 		return URI.from({ scheme, authority: localChatSessionType, path: '/' + encodedId });
 	}
 
-	export function getNewSessionUri(): URI {
+	export function createNewSessionUri(): URI {
 		const handle = Math.floor(Math.random() * 1e9);
-		return forSession(`chat-${handle}`);
+		return fromId(`chat-${handle}`);
 	}
 
 	export function parseLocalSessionId(resource: URI): string | undefined {

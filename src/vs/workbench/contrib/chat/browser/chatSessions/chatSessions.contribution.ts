@@ -1281,7 +1281,7 @@ export function getResourceForNewChatSession(options: NewChatSessionOpenOptions)
 		return ChatEditorInput.getNewEditorUri();
 	}
 
-	return LocalChatSessionUri.forSession(generateUuid());
+	return LocalChatSessionUri.fromId(generateUuid());
 }
 
 function isAgentSessionProviderType(type: string): boolean {

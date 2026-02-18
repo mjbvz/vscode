@@ -476,7 +476,7 @@ suite('AgentSessions', () => {
 					get items() {
 						return [{
 							id: 'local-session',
-							resource: LocalChatSessionUri.forSession('local-session'),
+							resource: LocalChatSessionUri.fromId('local-session'),
 							label: 'Local Session',
 							timing: makeNewSessionTiming()
 						}];
