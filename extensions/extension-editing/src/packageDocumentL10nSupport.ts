@@ -60,7 +60,7 @@ export class PackageDocumentL10nSupport implements vscode.DefinitionProvider, vs
 	}
 
 	private async resolveNlsDefinition(origin: { key: string; range: vscode.Range }, nlsUri: vscode.Uri): Promise<vscode.DefinitionLink[] | undefined> {
-		const target = await this.findNlsKeyDeclaration(origin.key, nlsUri);
+		const target = await this.findNlsKeyDefinitionTarget(origin.key, nlsUri);
 		if (!target) {
 			return undefined;
 		}
@@ -69,6 +69,7 @@ export class PackageDocumentL10nSupport implements vscode.DefinitionProvider, vs
 			originSelectionRange: origin.range,
 			targetUri: target.uri,
 			targetRange: target.range,
+			targetSelectionRange: target.selectionRange,
 		}];
 	}
 
@@ -88,9 +89,7 @@ export class PackageDocumentL10nSupport implements vscode.DefinitionProvider, vs
 			return undefined;
 		}
 
-		const nodeStart = packageJsonDoc.positionAt(location.previousNode.offset);
-		const nodeEnd = packageJsonDoc.positionAt(location.previousNode.offset + location.previousNode.length);
-		return { key: match[1], range: new vscode.Range(nodeStart, nodeEnd) };
+		return { key: match[1], range: this.rangeFromOffsetAndLength(packageJsonDoc, location.previousNode.offset, location.previousNode.length) };
 	}
 
 	public async provideReferences(document: vscode.TextDocument, position: vscode.Position, context: vscode.ReferenceContext, _token: vscode.CancellationToken): Promise<vscode.Location[] | undefined> {
@@ -137,7 +136,7 @@ export class PackageDocumentL10nSupport implements vscode.DefinitionProvider, vs
 		return locations;
 	}
 
-	private async findNlsKeyDeclaration(nlsKey: string, nlsUri: vscode.Uri): Promise<vscode.Location | undefined> {
+	private async findNlsKeyDefinitionTarget(nlsKey: string, nlsUri: vscode.Uri): Promise<{ uri: vscode.Uri; range: vscode.Range; selectionRange: vscode.Range } | undefined> {
 		try {
 			const nlsDoc = await vscode.workspace.openTextDocument(nlsUri);
 			const nlsTree = parseTree(nlsDoc.getText());
@@ -145,22 +144,37 @@ export class PackageDocumentL10nSupport implements vscode.DefinitionProvider, vs
 				return undefined;
 			}
 
-			const node = findNodeAtLocation(nlsTree, [nlsKey]);
-			if (!node?.parent) {
+			const valueNode = findNodeAtLocation(nlsTree, [nlsKey]);
+			if (!valueNode?.parent) {
 				return undefined;
 			}
 
-			const keyNode = node.parent.children?.[0];
+			const propertyNode = valueNode.parent;
+			const keyNode = propertyNode.children?.[0];
 			if (!keyNode) {
 				return undefined;
 			}
 
-			const start = nlsDoc.positionAt(keyNode.offset);
-			const end = nlsDoc.positionAt(keyNode.offset + keyNode.length);
-			return new vscode.Location(nlsUri, new vscode.Range(start, end));
+			const targetRange = this.rangeFromOffsetAndLength(nlsDoc, propertyNode.offset, propertyNode.length);
+			const targetSelectionRange = this.rangeFromOffsetAndLength(nlsDoc, keyNode.offset, keyNode.length);
+
+			return {
+				uri: nlsUri,
+				range: targetRange,
+				selectionRange: targetSelectionRange,
+			};
 		} catch {
 			return undefined;
 		}
+	}
+
+	private async findNlsKeyDeclaration(nlsKey: string, nlsUri: vscode.Uri): Promise<vscode.Location | undefined> {
+		const target = await this.findNlsKeyDefinitionTarget(nlsKey, nlsUri);
+		if (!target) {
+			return undefined;
+		}
+
+		return new vscode.Location(target.uri, target.selectionRange);
 	}
 
 	private async findNlsReferencesInPackageJson(nlsKey: string, packageJsonUri: vscode.Uri): Promise<vscode.Location[]> {
@@ -176,11 +190,9 @@ export class PackageDocumentL10nSupport implements vscode.DefinitionProvider, vs
 		const locations: vscode.Location[] = [];
 
 		visit(text, {
-			onLiteralValue(value, offset, length) {
+			onLiteralValue: (value, offset, length) => {
 				if (value === needle) {
-					const start = packageJsonDoc.positionAt(offset);
-					const end = packageJsonDoc.positionAt(offset + length);
-					locations.push(new vscode.Location(packageJsonUri, new vscode.Range(start, end)));
+					locations.push(new vscode.Location(packageJsonUri, this.rangeFromOffsetAndLength(packageJsonDoc, offset, length)));
 				}
 			}
 		});
@@ -197,8 +209,10 @@ export class PackageDocumentL10nSupport implements vscode.DefinitionProvider, vs
 		}
 
 		const key = location.path[0] as string;
-		const start = nlsDoc.positionAt(location.previousNode.offset);
-		const end = nlsDoc.positionAt(location.previousNode.offset + location.previousNode.length);
-		return { key, range: new vscode.Range(start, end) };
+		return { key, range: this.rangeFromOffsetAndLength(nlsDoc, location.previousNode.offset, location.previousNode.length) };
+	}
+
+	private rangeFromOffsetAndLength(document: vscode.TextDocument, offset: number, length: number): vscode.Range {
+		return new vscode.Range(document.positionAt(offset), document.positionAt(offset + length));
 	}
 }
