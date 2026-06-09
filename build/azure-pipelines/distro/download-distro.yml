@@ -2,7 +2,7 @@ steps:
   - task: AzureKeyVault@2
     displayName: "Azure Key Vault: Get Secrets"
     inputs:
-      azureSubscription: "vscode-builds-subscription"
+      azureSubscription: vscode
       KeyVaultName: vscode-build-secrets
       SecretsFilter: "github-distro-mixin-password"
 
@@ -53,3 +53,9 @@ steps:
       mv .build/microsoft-vscode-distro-$DistroVersion .build/distro
     condition: and(succeeded(), not(contains(variables['Agent.OS'], 'windows')))
     displayName: Download distro (non-Windows)
+
+  - script: git lfs install --local
+    displayName: Initialize Git LFS
+
+  - script: git lfs pull
+    displayName: Pull Git LFS objects

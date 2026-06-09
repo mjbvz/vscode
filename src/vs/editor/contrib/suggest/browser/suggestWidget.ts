@@ -26,22 +26,23 @@ import { IContextKey, IContextKeyService } from '../../../../platform/contextkey
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { activeContrastBorder, editorForeground, editorWidgetBackground, editorWidgetBorder, listFocusHighlightForeground, listHighlightForeground, quickInputListFocusBackground, quickInputListFocusForeground, quickInputListFocusIconForeground, registerColor, transparent } from '../../../../platform/theme/common/colorRegistry.js';
-import { isHighContrast } from '../../../../platform/theme/common/theme.js';
-import { IColorTheme, IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { CompletionModel } from './completionModel.js';
 import { ResizableHTMLElement } from '../../../../base/browser/ui/resizable/resizable.js';
 import { CompletionItem, Context as SuggestContext, suggestWidgetStatusbarMenu } from './suggest.js';
 import { canExpandCompletionItem, SuggestDetailsOverlay, SuggestDetailsWidget } from './suggestWidgetDetails.js';
-import { getAriaId, ItemRenderer } from './suggestWidgetRenderer.js';
+import { ItemRenderer } from './suggestWidgetRenderer.js';
 import { getListStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { status } from '../../../../base/browser/ui/aria/aria.js';
+import { CompletionItemKinds } from '../../../common/languages.js';
+import { isWindows } from '../../../../base/common/platform.js';
 
 /**
  * Suggest widget colors
  */
 registerColor('editorSuggestWidget.background', editorWidgetBackground, nls.localize('editorSuggestWidgetBackground', 'Background color of the suggest widget.'));
 registerColor('editorSuggestWidget.border', editorWidgetBorder, nls.localize('editorSuggestWidgetBorder', 'Border color of the suggest widget.'));
-const editorSuggestWidgetForeground = registerColor('editorSuggestWidget.foreground', editorForeground, nls.localize('editorSuggestWidgetForeground', 'Foreground color of the suggest widget.'));
+export const editorSuggestWidgetForeground = registerColor('editorSuggestWidget.foreground', editorForeground, nls.localize('editorSuggestWidgetForeground', 'Foreground color of the suggest widget.'));
 registerColor('editorSuggestWidget.selectedForeground', quickInputListFocusForeground, nls.localize('editorSuggestWidgetSelectedForeground', 'Foreground color of the selected entry in the suggest widget.'));
 registerColor('editorSuggestWidget.selectedIconForeground', quickInputListFocusIconForeground, nls.localize('editorSuggestWidgetSelectedIconForeground', 'Icon foreground color of the selected entry in the suggest widget.'));
 export const editorSuggestWidgetSelectedBackground = registerColor('editorSuggestWidget.selectedBackground', quickInputListFocusBackground, nls.localize('editorSuggestWidgetSelectedBackground', 'Background color of the selected entry in the suggest widget.'));
@@ -105,7 +106,7 @@ export class SuggestWidget implements IDisposable {
 
 	private _state: State = State.Hidden;
 	private _isAuto: boolean = false;
-	private _loadingTimeout?: IDisposable;
+	private readonly _loadingTimeout = new MutableDisposable();
 	private readonly _pendingLayout = new MutableDisposable();
 	private readonly _pendingShowDetails = new MutableDisposable();
 	private _currentSuggestionDetails?: CancelablePromise<void>;
@@ -129,6 +130,7 @@ export class SuggestWidget implements IDisposable {
 	private readonly _ctxSuggestWidgetDetailsVisible: IContextKey<boolean>;
 	private readonly _ctxSuggestWidgetMultipleSuggestions: IContextKey<boolean>;
 	private readonly _ctxSuggestWidgetHasFocusedSuggestion: IContextKey<boolean>;
+	private readonly _ctxSuggestWidgetDetailsFocused: IContextKey<boolean>;
 
 	private readonly _showTimeout = new TimeoutTimer();
 	private readonly _disposables = new DisposableStore();
@@ -230,23 +232,25 @@ export class SuggestWidget implements IDisposable {
 			mouseSupport: false,
 			multipleSelectionSupport: false,
 			accessibilityProvider: {
-				getRole: () => 'option',
+				getRole: () => isWindows ? 'listitem' : 'option',
 				getWidgetAriaLabel: () => nls.localize('suggest', "Suggest"),
 				getWidgetRole: () => 'listbox',
 				getAriaLabel: (item: CompletionItem) => {
 
 					let label = item.textLabel;
+					const kindLabel = CompletionItemKinds.toLabel(item.completion.kind);
 					if (typeof item.completion.label !== 'string') {
 						const { detail, description } = item.completion.label;
 						if (detail && description) {
-							label = nls.localize('label.full', '{0} {1}, {2}', label, detail, description);
+							label = nls.localize('label.full', '{0} {1}, {2}, {3}', label, detail, description, kindLabel);
 						} else if (detail) {
-							label = nls.localize('label.detail', '{0} {1}', label, detail);
+							label = nls.localize('label.detail', '{0} {1}, {2}', label, detail, kindLabel);
 						} else if (description) {
-							label = nls.localize('label.desc', '{0}, {1}', label, description);
+							label = nls.localize('label.desc', '{0}, {1}, {2}', label, description, kindLabel);
 						}
+					} else {
+						label = nls.localize('label', '{0}, {1}', label, kindLabel);
 					}
-
 					if (!item.isResolved || !this._isDetailsVisible()) {
 						return label;
 					}
@@ -266,12 +270,9 @@ export class SuggestWidget implements IDisposable {
 			listInactiveFocusOutline: activeContrastBorder
 		}));
 
-		this._status = instantiationService.createInstance(SuggestWidgetStatus, this.element.domNode, suggestWidgetStatusbarMenu);
+		this._status = instantiationService.createInstance(SuggestWidgetStatus, this.element.domNode, suggestWidgetStatusbarMenu, undefined);
 		const applyStatusBarStyle = () => this.element.domNode.classList.toggle('with-status-bar', this.editor.getOption(EditorOption.suggest).showStatusBar);
 		applyStatusBarStyle();
-
-		this._disposables.add(_themeService.onDidColorThemeChange(t => this._onThemeChange(t)));
-		this._onThemeChange(_themeService.getColorTheme());
 
 		this._disposables.add(this._list.onMouseDown(e => this._onListMouseDownOrTap(e)));
 		this._disposables.add(this._list.onTap(e => this._onListMouseDownOrTap(e)));
@@ -292,6 +293,12 @@ export class SuggestWidget implements IDisposable {
 		this._ctxSuggestWidgetDetailsVisible = SuggestContext.DetailsVisible.bindTo(_contextKeyService);
 		this._ctxSuggestWidgetMultipleSuggestions = SuggestContext.MultipleSuggestions.bindTo(_contextKeyService);
 		this._ctxSuggestWidgetHasFocusedSuggestion = SuggestContext.HasFocusedSuggestion.bindTo(_contextKeyService);
+		this._ctxSuggestWidgetDetailsFocused = SuggestContext.DetailsFocused.bindTo(_contextKeyService);
+
+		const detailsFocusTracker = dom.trackFocus(this._details.widget.domNode);
+		this._disposables.add(detailsFocusTracker);
+		this._disposables.add(detailsFocusTracker.onDidFocus(() => this._ctxSuggestWidgetDetailsFocused.set(true)));
+		this._disposables.add(detailsFocusTracker.onDidBlur(() => this._ctxSuggestWidgetDetailsFocused.set(false)));
 
 		this._disposables.add(dom.addStandardDisposableListener(this._details.widget.domNode, 'keydown', e => {
 			this._onDetailsKeydown.fire(e);
@@ -306,12 +313,17 @@ export class SuggestWidget implements IDisposable {
 		this._list.dispose();
 		this._status.dispose();
 		this._disposables.dispose();
-		this._loadingTimeout?.dispose();
+		this._loadingTimeout.dispose();
 		this._pendingLayout.dispose();
 		this._pendingShowDetails.dispose();
 		this._showTimeout.dispose();
 		this._contentWidget.dispose();
 		this.element.dispose();
+		this._onDidSelect.dispose();
+		this._onDidFocus.dispose();
+		this._onDidHide.dispose();
+		this._onDidShow.dispose();
+		this._onDetailsKeydown.dispose();
 	}
 
 	private _onEditorMouseDown(mouseEvent: IEditorMouseEvent): void {
@@ -356,10 +368,6 @@ export class SuggestWidget implements IDisposable {
 			this._onDidSelect.fire({ item, index, model: completionModel });
 			this.editor.focus();
 		}
-	}
-
-	private _onThemeChange(theme: IColorTheme) {
-		this._details.widget.borderWidth = isHighContrast(theme.type) ? 2 : 1;
 	}
 
 	private _onListFocus(e: IListEvent<CompletionItem>): void {
@@ -434,7 +442,7 @@ export class SuggestWidget implements IDisposable {
 					this.element.domNode.classList.remove('docs-side');
 				}
 
-				this.editor.setAriaOptions({ activeDescendant: getAriaId(index) });
+				this.editor.setAriaOptions({ activeDescendant: this._list.getElementID(index) });
 			}).catch(onUnexpectedError);
 		}
 
@@ -528,14 +536,14 @@ export class SuggestWidget implements IDisposable {
 		this._isAuto = !!auto;
 
 		if (!this._isAuto) {
-			this._loadingTimeout = disposableTimeout(() => this._setState(State.Loading), delay);
+			this._loadingTimeout.value = disposableTimeout(() => this._setState(State.Loading), delay);
 		}
 	}
 
 	showSuggestions(completionModel: CompletionModel, selectionIndex: number, isFrozen: boolean, isAuto: boolean, noFocus: boolean): void {
 
 		this._contentWidget.setPosition(this.editor.getPosition());
-		this._loadingTimeout?.dispose();
+		this._loadingTimeout.clear();
 
 		this._currentSuggestionDetails?.cancel();
 		this._currentSuggestionDetails = undefined;
@@ -570,7 +578,7 @@ export class SuggestWidget implements IDisposable {
 		try {
 			this._list.splice(0, this._list.length, this._completionModel.items);
 			this._setState(isFrozen ? State.Frozen : State.Open);
-			this._list.reveal(selectionIndex, 0);
+			this._list.reveal(selectionIndex, 0, selectionIndex === 0 ? 0 : this.getLayoutInfo().itemHeight * 0.33);
 			this._list.setFocus(noFocus ? [] : [selectionIndex]);
 		} finally {
 			this._onDidFocus.resume();
@@ -768,7 +776,7 @@ export class SuggestWidget implements IDisposable {
 	hideWidget(): void {
 		this._pendingLayout.clear();
 		this._pendingShowDetails.clear();
-		this._loadingTimeout?.dispose();
+		this._loadingTimeout.clear();
 
 		this._setState(State.Hidden);
 		this._onDidHide.fire(this);
@@ -869,7 +877,7 @@ export class SuggestWidget implements IDisposable {
 			}
 
 			const forceRenderingAboveRequiredSpace = 150;
-			if (height > maxHeightBelow || (this._forceRenderingAbove && availableSpaceAbove > forceRenderingAboveRequiredSpace)) {
+			if ((height > maxHeightBelow && maxHeightAbove > maxHeightBelow) || (this._forceRenderingAbove && availableSpaceAbove > forceRenderingAboveRequiredSpace)) {
 				this._contentWidget.setPreference(ContentWidgetPositionPreference.ABOVE);
 				this.element.enableSashes(true, true, false, false);
 				maxHeight = maxHeightAbove;
@@ -917,7 +925,7 @@ export class SuggestWidget implements IDisposable {
 		const fontInfo = this.editor.getOption(EditorOption.fontInfo);
 		const itemHeight = clamp(this.editor.getOption(EditorOption.suggestLineHeight) || fontInfo.lineHeight, 8, 1000);
 		const statusBarHeight = !this.editor.getOption(EditorOption.suggest).showStatusBar || this._state === State.Empty || this._state === State.Loading ? 0 : itemHeight;
-		const borderWidth = this._details.widget.borderWidth;
+		const borderWidth = this._details.widget.getLayoutInfo().borderWidth;
 		const borderHeight = 2 * borderWidth;
 
 		return {
@@ -928,7 +936,7 @@ export class SuggestWidget implements IDisposable {
 			typicalHalfwidthCharacterWidth: fontInfo.typicalHalfwidthCharacterWidth,
 			verticalPadding: 22,
 			horizontalPadding: 14,
-			defaultSize: new dom.Dimension(430, statusBarHeight + 12 * itemHeight + borderHeight)
+			defaultSize: new dom.Dimension(430, statusBarHeight + 12 * itemHeight)
 		};
 	}
 

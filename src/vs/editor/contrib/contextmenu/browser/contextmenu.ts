@@ -196,14 +196,6 @@ export class ContextMenuController implements IEditorContribution {
 			return;
 		}
 
-		// Disable hover
-		const oldHoverSetting = this._editor.getOption(EditorOption.hover);
-		this._editor.updateOptions({
-			hover: {
-				enabled: false
-			}
-		});
-
 		let anchor: IMouseEvent | IAnchor | null = event;
 		if (!anchor) {
 			// Ensure selection is visible
@@ -237,9 +229,9 @@ export class ContextMenuController implements IEditorContribution {
 					return new ActionViewItem(action, action, { label: true, keybinding: keybinding.getLabel(), isMenu: true });
 				}
 
-				const customActionViewItem = <any>action;
-				if (typeof customActionViewItem.getActionViewItem === 'function') {
-					return customActionViewItem.getActionViewItem();
+				const customAction = action as IAction & { getActionViewItem?: () => ActionViewItem };
+				if (typeof customAction.getActionViewItem === 'function') {
+					return customAction.getActionViewItem();
 				}
 
 				return new ActionViewItem(action, action, { icon: true, label: true, isMenu: true });
@@ -251,9 +243,6 @@ export class ContextMenuController implements IEditorContribution {
 
 			onHide: (wasCancelled: boolean) => {
 				this._contextMenuIsBeingShownCount--;
-				this._editor.updateOptions({
-					hover: oldHoverSetting
-				});
 			}
 		});
 	}
@@ -359,6 +348,19 @@ export class ContextMenuController implements IEditorContribution {
 				value: 'always'
 			}]
 		));
+		actions.push(createEnumAction<'right' | 'left'>(
+			nls.localize('context.minimap.side', "Side"),
+			minimapOptions.enabled,
+			'editor.minimap.side',
+			minimapOptions.side,
+			[{
+				label: nls.localize('context.minimap.side.right', "Right"),
+				value: 'right'
+			}, {
+				label: nls.localize('context.minimap.side.left', "Left"),
+				value: 'left'
+			}]
+		));
 
 		const useShadowDOM = this._editor.getOption(EditorOption.useShadowDOM) && !isIOS; // Do not use shadow dom on IOS #122035
 		this._contextMenuIsBeingShownCount++;
@@ -391,8 +393,7 @@ class ShowContextMenu extends EditorAction {
 	constructor() {
 		super({
 			id: 'editor.action.showContextMenu',
-			label: nls.localize('action.showContextMenu.label', "Show Editor Context Menu"),
-			alias: 'Show Editor Context Menu',
+			label: nls.localize2('action.showContextMenu.label', "Show Editor Context Menu"),
 			precondition: undefined,
 			kbOpts: {
 				kbExpr: EditorContextKeys.textInputFocus,

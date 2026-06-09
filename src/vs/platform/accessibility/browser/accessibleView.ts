@@ -18,8 +18,12 @@ export const enum AccessibleViewProviderId {
 	TerminalChat = 'terminal-chat',
 	TerminalHelp = 'terminal-help',
 	DiffEditor = 'diffEditor',
+	MergeEditor = 'mergeEditor',
 	PanelChat = 'panelChat',
+	ChatTerminalOutput = 'chatTerminalOutput',
+	ChatThinking = 'chatThinking',
 	InlineChat = 'inlineChat',
+	AgentChat = 'agentChat',
 	QuickChat = 'quickChat',
 	InlineCompletions = 'inlineCompletions',
 	KeybindingsEditor = 'keybindingsEditor',
@@ -35,6 +39,14 @@ export const enum AccessibleViewProviderId {
 	ReplHelp = 'replHelp',
 	RunAndDebug = 'runAndDebug',
 	Walkthrough = 'walkthrough',
+	SourceControl = 'scm',
+	EditorFindHelp = 'editorFindHelp',
+	SearchHelp = 'searchHelp',
+	TerminalFindHelp = 'terminalFindHelp',
+	WebviewFindHelp = 'webviewFindHelp',
+	OutputFindHelp = 'outputFindHelp',
+	ProblemsFilterHelp = 'problemsFilterHelp',
+	SessionsChat = 'sessionsChat',
 }
 
 export const enum AccessibleViewType {
@@ -97,7 +109,7 @@ export interface IAccessibleViewContentProvider extends IBasicContentProvider, I
 	/**
 	 * Note that this will only take effect if the provider has an ID.
 	 */
-	onDidRequestClearLastProvider?: Event<AccessibleViewProviderId>;
+	readonly onDidRequestClearLastProvider?: Event<AccessibleViewProviderId>;
 }
 
 
@@ -168,6 +180,19 @@ export class AccessibleContentProvider extends Disposable implements IAccessible
 	}
 }
 
+export function isIAccessibleViewContentProvider(obj: unknown): obj is IAccessibleViewContentProvider {
+	if (!obj || typeof obj !== 'object') {
+		return false;
+	}
+
+	const candidate = obj as Partial<IAccessibleViewContentProvider>;
+	return !!candidate.id
+		&& !!candidate.options
+		&& typeof candidate.provideContent === 'function'
+		&& typeof candidate.onClose === 'function'
+		&& typeof candidate.verbositySettingKey === 'string';
+}
+
 export class ExtensionContentProvider extends Disposable implements IBasicContentProvider {
 
 	constructor(
@@ -194,5 +219,5 @@ export interface IBasicContentProvider extends IDisposable {
 	actions?: IAction[];
 	providePreviousContent?(): void;
 	provideNextContent?(): void;
-	onDidChangeContent?: Event<void>;
+	readonly onDidChangeContent?: Event<void>;
 }

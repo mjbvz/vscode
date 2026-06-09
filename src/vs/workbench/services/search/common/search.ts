@@ -17,7 +17,7 @@ import { ITelemetryData } from '../../../../platform/telemetry/common/telemetry.
 import { Event } from '../../../../base/common/event.js';
 import * as paths from '../../../../base/common/path.js';
 import { isCancellationError } from '../../../../base/common/errors.js';
-import { GlobPattern, TextSearchCompleteMessageType } from './searchExtTypes.js';
+import { AISearchKeyword, GlobPattern, TextSearchCompleteMessageType } from './searchExtTypes.js';
 import { isThenable } from '../../../../base/common/async.js';
 import { ResourceSet } from '../../../../base/common/map.js';
 
@@ -81,6 +81,7 @@ export interface IFolderQuery<U extends UriComponents = URI> {
 	folderName?: string;
 	excludePattern?: ExcludeGlobPattern<U>[];
 	includePattern?: glob.IExpression;
+	ignoreGlobCase?: boolean;
 	fileEncoding?: string;
 	disregardIgnoreFiles?: boolean;
 	disregardGlobalIgnoreFiles?: boolean;
@@ -97,6 +98,7 @@ export interface ICommonQueryProps<U extends UriComponents> {
 	// Note that this will override any ignore files if applicable.
 	includePattern?: glob.IExpression;
 	excludePattern?: glob.IExpression;
+	ignoreGlobCase?: boolean;
 	extraFileResources?: U[];
 
 	onlyOpenEditors?: boolean;
@@ -155,6 +157,7 @@ export type IRawAITextQuery = IAITextQueryProps<UriComponents>;
 
 export type IRawQuery = IRawTextQuery | IRawFileQuery | IRawAITextQuery;
 export type ISearchQuery = ITextQuery | IFileQuery | IAITextQuery;
+export type ITextSearchQuery = ITextQuery | IAITextQuery;
 
 export const enum QueryType {
 	File = 1,
@@ -237,10 +240,14 @@ export interface IProgressMessage {
 	message: string;
 }
 
-export type ISearchProgressItem = IFileMatch | IProgressMessage;
+export type ISearchProgressItem = IFileMatch | IProgressMessage | AISearchKeyword;
 
 export function isFileMatch(p: ISearchProgressItem): p is IFileMatch {
 	return !!(<IFileMatch>p).resource;
+}
+
+export function isAIKeyword(p: ISearchProgressItem): p is AISearchKeyword {
+	return !!(<AISearchKeyword>p).keyword;
 }
 
 export function isProgressMessage(p: ISearchProgressItem | ISerializedSearchProgressItem): p is IProgressMessage {
@@ -262,6 +269,7 @@ export interface ISearchCompleteStats {
 export interface ISearchComplete extends ISearchCompleteStats {
 	results: IFileMatch[];
 	exit?: SearchCompletionExitCode;
+	aiKeywords?: AISearchKeyword[];
 }
 
 export const enum SearchCompletionExitCode {
@@ -414,6 +422,12 @@ export const enum SearchSortOrder {
 	CountAscending = 'countAscending'
 }
 
+export const enum SemanticSearchBehavior {
+	Auto = 'auto',
+	Manual = 'manual',
+	RunOnEmpty = 'runOnEmpty',
+}
+
 export interface ISearchConfigurationProperties {
 	exclude: glob.IExpression;
 	useRipgrep: boolean;
@@ -459,10 +473,14 @@ export interface ISearchConfigurationProperties {
 	experimental: {
 		closedNotebookRichContentResults: boolean;
 	};
+	searchView: {
+		semanticSearchBehavior: string;
+		keywordSuggestions: boolean;
+	};
 }
 
 export interface ISearchConfiguration extends IFilesConfiguration {
-	search: ISearchConfigurationProperties;
+	search?: ISearchConfigurationProperties;
 	editor: {
 		wordSeparators: string;
 	};
@@ -489,12 +507,13 @@ export function getExcludes(configuration: ISearchConfiguration, includeSearchEx
 }
 
 export function pathIncludedInQuery(queryProps: ICommonQueryProps<URI>, fsPath: string): boolean {
-	if (queryProps.excludePattern && glob.match(queryProps.excludePattern, fsPath)) {
+	const globOptions = queryProps.ignoreGlobCase ? { ignoreCase: true } : undefined;
+	if (queryProps.excludePattern && glob.match(queryProps.excludePattern, fsPath, globOptions)) {
 		return false;
 	}
 
 	if (queryProps.includePattern || queryProps.usingSearchPaths) {
-		if (queryProps.includePattern && glob.match(queryProps.includePattern, fsPath)) {
+		if (queryProps.includePattern && glob.match(queryProps.includePattern, fsPath, globOptions)) {
 			return true;
 		}
 
@@ -502,9 +521,9 @@ export function pathIncludedInQuery(queryProps: ICommonQueryProps<URI>, fsPath: 
 		if (queryProps.usingSearchPaths) {
 			return !!queryProps.folderQueries && queryProps.folderQueries.some(fq => {
 				const searchPath = fq.folder.fsPath;
-				if (extpath.isEqualOrParent(fsPath, searchPath)) {
+				if (extpath.isEqualOrParent(fsPath, searchPath, queryProps.ignoreGlobCase)) {
 					const relPath = paths.relative(searchPath, fsPath);
-					return !fq.includePattern || !!glob.match(fq.includePattern, relPath);
+					return !fq.includePattern || !!glob.match(fq.includePattern, relPath, globOptions);
 				} else {
 					return false;
 				}
@@ -609,8 +628,10 @@ export interface ISerializedSearchError {
 export type ISerializedSearchComplete = ISerializedSearchSuccess | ISerializedSearchError;
 
 export function isSerializedSearchComplete(arg: ISerializedSearchProgressItem | ISerializedSearchComplete): arg is ISerializedSearchComplete {
+	// eslint-disable-next-line local/code-no-any-casts
 	if ((arg as any).type === 'error') {
 		return true;
+		// eslint-disable-next-line local/code-no-any-casts
 	} else if ((arg as any).type === 'success') {
 		return true;
 	} else {
@@ -626,11 +647,13 @@ export function isSerializedFileMatch(arg: ISerializedSearchProgressItem): arg i
 	return !!(<ISerializedFileMatch>arg).path;
 }
 
-export function isFilePatternMatch(candidate: IRawFileMatch, filePatternToUse: string, fuzzy = true): boolean {
+const filePatternIgnoreCaseOptions = { ignoreCase: true };
+
+export function isFilePatternMatch(candidate: IRawFileMatch, filePatternToUse: string, fuzzy = true, ignoreCase?: boolean): boolean {
 	const pathToMatch = candidate.searchPath ? candidate.searchPath : candidate.relativePath;
 	return fuzzy ?
 		fuzzyContains(pathToMatch, filePatternToUse) :
-		glob.match(filePatternToUse, pathToMatch);
+		glob.match(filePatternToUse, pathToMatch, ignoreCase ? filePatternIgnoreCaseOptions : undefined);
 }
 
 export interface ISerializedFileMatch {
@@ -690,6 +713,8 @@ export class QueryGlobTester {
 	private _parsedIncludeExpression: glob.ParsedExpression | null = null;
 
 	constructor(config: ISearchQuery, folderQuery: IFolderQuery) {
+		const globOptions = config.ignoreGlobCase || folderQuery.ignoreGlobCase ? { ignoreCase: true } : undefined;
+
 		// todo: try to incorporate folderQuery.excludePattern.folder if available
 		this._excludeExpression = folderQuery.excludePattern?.map(excludePattern => {
 			return {
@@ -703,7 +728,7 @@ export class QueryGlobTester {
 			this._excludeExpression = [config.excludePattern || {}];
 		}
 
-		this._parsedExcludeExpression = this._excludeExpression.map(e => glob.parse(e));
+		this._parsedExcludeExpression = this._excludeExpression.map(e => glob.parse(e, globOptions));
 
 		// Empty includeExpression means include nothing, so no {} shortcuts
 		let includeExpression: glob.IExpression | undefined = config.includePattern;
@@ -719,7 +744,7 @@ export class QueryGlobTester {
 		}
 
 		if (includeExpression) {
-			this._parsedIncludeExpression = glob.parse(includeExpression);
+			this._parsedIncludeExpression = glob.parse(includeExpression, globOptions);
 		}
 	}
 

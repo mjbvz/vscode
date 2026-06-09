@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { EventType, addDisposableListener, getActiveWindow, isActiveElement } from '../../../../base/browser/dom.js';
+import { EventType, addDisposableListener, getActiveWindow, getWindow, isActiveElement } from '../../../../base/browser/dom.js';
 import { IKeyboardEvent, StandardKeyboardEvent } from '../../../../base/browser/keyboardEvent.js';
 import { ActionsOrientation } from '../../../../base/browser/ui/actionbar/actionbar.js';
 import { alert } from '../../../../base/browser/ui/aria/aria.js';
@@ -12,6 +12,7 @@ import { Codicon } from '../../../../base/common/codicons.js';
 import { KeyCode } from '../../../../base/common/keyCodes.js';
 import { Disposable, DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
 import * as marked from '../../../../base/common/marked/marked.js';
+import { Schemas } from '../../../../base/common/network.js';
 import { isMacintosh, isWindows } from '../../../../base/common/platform.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
@@ -21,12 +22,15 @@ import { CodeEditorWidget, ICodeEditorWidgetOptions } from '../../../../editor/b
 import { IPosition, Position } from '../../../../editor/common/core/position.js';
 import { ITextModel } from '../../../../editor/common/model.js';
 import { IModelService } from '../../../../editor/common/services/model.js';
+
 import { AccessibilityHelpNLS } from '../../../../editor/common/standaloneStrings.js';
 import { CodeActionController } from '../../../../editor/contrib/codeAction/browser/codeActionController.js';
+import { FloatingEditorToolbar } from '../../../../editor/contrib/floatingMenu/browser/floatingMenu.js';
 import { localize } from '../../../../nls.js';
-import { AccessibleViewProviderId, AccessibleViewType, AccessibleContentProvider, ExtensionContentProvider, IAccessibleViewService, IAccessibleViewSymbol } from '../../../../platform/accessibility/browser/accessibleView.js';
+import { AccessibleContentProvider, AccessibleViewProviderId, AccessibleViewType, ExtensionContentProvider, IAccessibleViewService, IAccessibleViewSymbol, isIAccessibleViewContentProvider } from '../../../../platform/accessibility/browser/accessibleView.js';
 import { ACCESSIBLE_VIEW_SHOWN_STORAGE_PREFIX, IAccessibilityService } from '../../../../platform/accessibility/common/accessibility.js';
-import { createAndFillInActionBarActions } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
+import { AccessibilitySignal, IAccessibilitySignalService } from '../../../../platform/accessibilitySignal/browser/accessibilitySignalService.js';
+import { getFlatActionBarActions } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
 import { WorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
 import { IMenuService, MenuId } from '../../../../platform/actions/common/actions.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
@@ -40,17 +44,18 @@ import { ILayoutService } from '../../../../platform/layout/browser/layoutServic
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { IQuickInputService, IQuickPick, IQuickPickItem } from '../../../../platform/quickinput/common/quickInput.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
+import { FloatingEditorClickMenu } from '../../../browser/codeeditor.js';
+import { IChatCodeBlockContextProviderService } from '../../chat/browser/chat.js';
+import { ICodeBlockActionContext } from '../../chat/browser/widget/chatContentParts/codeBlockPart.js';
+import { getSimpleEditorOptions } from '../../codeEditor/browser/simpleEditorOptions.js';
+import { AccessibilityCommandId } from '../common/accessibilityCommands.js';
 import { AccessibilityVerbositySettingId, AccessibilityWorkbenchSettingId, accessibilityHelpIsShown, accessibleViewContainsCodeBlocks, accessibleViewCurrentProviderId, accessibleViewGoToSymbolSupported, accessibleViewHasAssignedKeybindings, accessibleViewHasUnassignedKeybindings, accessibleViewInCodeBlock, accessibleViewIsShown, accessibleViewOnLastLine, accessibleViewSupportsNavigation, accessibleViewVerbosityEnabled } from './accessibilityConfiguration.js';
 import { resolveContentAndKeybindingItems } from './accessibleViewKeybindingResolver.js';
-import { AccessibilityCommandId } from '../common/accessibilityCommands.js';
-import { IChatCodeBlockContextProviderService } from '../../chat/browser/chat.js';
-import { ICodeBlockActionContext } from '../../chat/browser/codeBlockPart.js';
-import { getSimpleEditorOptions } from '../../codeEditor/browser/simpleEditorOptions.js';
-import { Schemas } from '../../../../base/common/network.js';
-import { ITextModelContentProvider, ITextModelService } from '../../../../editor/common/services/resolverService.js';
 
 const enum DIMENSIONS {
-	MAX_WIDTH = 600
+	MAX_WIDTH = 900,
+	WIDTH_RATIO = 0.75,
+	MAX_HEIGHT_RATIO = 0.6
 }
 
 export type AccesibleViewContentProvider = AccessibleContentProvider | ExtensionContentProvider;
@@ -60,9 +65,10 @@ interface ICodeBlock {
 	endLine: number;
 	code: string;
 	languageId?: string;
+	chatSessionResource: URI | undefined;
 }
 
-export class AccessibleView extends Disposable implements ITextModelContentProvider {
+export class AccessibleView extends Disposable {
 	private _editorWidget: CodeEditorWidget;
 
 	private _accessiblityHelpIsShown: IContextKey<boolean>;
@@ -78,7 +84,7 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 	private _hasAssignedKeybindings: IContextKey<boolean>;
 
 	private _codeBlocks?: ICodeBlock[];
-	private _inQuickPick: boolean = false;
+	private _isInQuickPick: boolean = false;
 
 	get editorWidget() { return this._editorWidget; }
 	private _container: HTMLElement;
@@ -89,6 +95,7 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 	private _currentContent: string | undefined;
 
 	private _lastProvider: AccesibleViewContentProvider | undefined;
+	private _lastProviderPosition: Map<string, Position> = new Map();
 
 	private _viewContainer: HTMLElement | undefined;
 
@@ -107,8 +114,8 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 		@ICommandService private readonly _commandService: ICommandService,
 		@IChatCodeBlockContextProviderService private readonly _codeBlockContextProviderService: IChatCodeBlockContextProviderService,
 		@IStorageService private readonly _storageService: IStorageService,
-		@ITextModelService private readonly textModelResolverService: ITextModelService,
-		@IQuickInputService private readonly _quickInputService: IQuickInputService
+		@IQuickInputService private readonly _quickInputService: IQuickInputService,
+		@IAccessibilitySignalService private readonly _accessibilitySignalService: IAccessibilitySignalService,
 	) {
 		super();
 
@@ -130,7 +137,8 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 			this._container.classList.add('hide');
 		}
 		const codeEditorWidgetOptions: ICodeEditorWidgetOptions = {
-			contributions: EditorExtensionsRegistry.getEditorContributions().filter(c => c.id !== CodeActionController.ID)
+			contributions: EditorExtensionsRegistry.getEditorContributions()
+				.filter(c => c.id !== CodeActionController.ID && c.id !== FloatingEditorClickMenu.ID && c.id !== FloatingEditorToolbar.ID)
 		};
 		const titleBar = document.createElement('div');
 		titleBar.classList.add('accessible-view-title-bar');
@@ -161,7 +169,6 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 			readOnly: true,
 			fontFamily: 'var(--monaco-monospace-font)'
 		};
-		this.textModelResolverService.registerTextModelContentProvider(Schemas.accessibleView, this);
 
 		this._editorWidget = this._register(this._instantiationService.createInstance(CodeEditorWidget, this._container, editorOptions, codeEditorWidgetOptions));
 		this._register(this._accessibilityService.onDidChangeScreenReaderOptimized(() => {
@@ -170,7 +177,7 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 			}
 		}));
 		this._register(this._configurationService.onDidChangeConfiguration(e => {
-			if (this._currentProvider instanceof AccessibleContentProvider && e.affectsConfiguration(this._currentProvider.verbositySettingKey)) {
+			if (isIAccessibleViewContentProvider(this._currentProvider) && e.affectsConfiguration(this._currentProvider.verbositySettingKey)) {
 				if (this._accessiblityHelpIsShown.get()) {
 					this.show(this._currentProvider);
 				}
@@ -184,17 +191,30 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 		this._register(this._editorWidget.onDidDispose(() => this._resetContextKeys()));
 		this._register(this._editorWidget.onDidChangeCursorPosition(() => {
 			this._onLastLine.set(this._editorWidget.getPosition()?.lineNumber === this._editorWidget.getModel()?.getLineCount());
-		}));
-		this._register(this._editorWidget.onDidChangeCursorPosition(() => {
 			const cursorPosition = this._editorWidget.getPosition()?.lineNumber;
 			if (this._codeBlocks && cursorPosition !== undefined) {
 				const inCodeBlock = this._codeBlocks.find(c => c.startLine <= cursorPosition && c.endLine >= cursorPosition) !== undefined;
 				this._accessibleViewInCodeBlock.set(inCodeBlock);
 			}
+			this._playDiffSignals();
 		}));
 	}
-	provideTextContent(resource: URI): Promise<ITextModel | null> | null {
-		return this._getTextModel(resource);
+
+	private _playDiffSignals(): void {
+		if (this._currentProvider?.id !== AccessibleViewProviderId.DiffEditor && this._currentProvider?.id !== AccessibleViewProviderId.InlineCompletions) {
+			return;
+		}
+		const position = this._editorWidget.getPosition();
+		const model = this._editorWidget.getModel();
+		if (!position || !model) {
+			return undefined;
+		}
+		const lineContent = model.getLineContent(position.lineNumber);
+		if (lineContent?.startsWith('+')) {
+			this._accessibilitySignalService.playSignal(AccessibilitySignal.diffLineInserted);
+		} else if (lineContent?.startsWith('-')) {
+			this._accessibilitySignalService.playSignal(AccessibilitySignal.diffLineDeleted);
+		}
 	}
 
 	private _resetContextKeys(): void {
@@ -238,7 +258,7 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 		if (!codeBlock || codeBlockIndex === undefined) {
 			return;
 		}
-		return { code: codeBlock.code, languageId: codeBlock.languageId, codeBlockIndex, element: undefined };
+		return { code: codeBlock.code, languageId: codeBlock.languageId, codeBlockIndex, element: undefined, chatSessionResource: codeBlock.chatSessionResource };
 	}
 
 	navigateToCodeBlock(type: 'next' | 'previous'): void {
@@ -273,7 +293,7 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 		}
 		provider.onOpen?.();
 		const delegate: IContextViewDelegate = {
-			getAnchor: () => { return { x: (getActiveWindow().innerWidth / 2) - ((Math.min(this._layoutService.activeContainerDimension.width * 0.62 /* golden cut */, DIMENSIONS.MAX_WIDTH)) / 2), y: this._layoutService.activeContainerOffset.quickPickTop }; },
+			getAnchor: () => { return { x: (getActiveWindow().innerWidth / 2) - ((Math.min(this._layoutService.activeContainerDimension.width * DIMENSIONS.WIDTH_RATIO, DIMENSIONS.MAX_WIDTH)) / 2), y: this._layoutService.activeContainerOffset.quickPickTop }; },
 			render: (container) => {
 				this._viewContainer = container;
 				this._viewContainer.classList.add('accessible-view-container');
@@ -282,6 +302,13 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 			onHide: () => {
 				if (!showAccessibleViewHelp) {
 					this._updateLastProvider();
+					// Save cursor position before disposing so it can be restored on reopen
+					if (this._currentProvider) {
+						const currentPosition = this._editorWidget.getPosition();
+						if (currentPosition) {
+							this._lastProviderPosition.set(this._currentProvider.id, currentPosition);
+						}
+					}
 					this._currentProvider?.dispose();
 					this._currentProvider = undefined;
 					this._resetContextKeys();
@@ -306,6 +333,7 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 				if (this._lastProvider?.options.id === id) {
 					this._lastProvider = undefined;
 				}
+				this._lastProviderPosition.delete(id);
 			}));
 		}
 		if (provider.options.id) {
@@ -345,13 +373,14 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 		if (!this._currentProvider) {
 			return false;
 		}
-		return this._currentProvider instanceof AccessibleContentProvider ? this._configurationService.getValue(this._currentProvider.verbositySettingKey) === true : this._storageService.getBoolean(`${ACCESSIBLE_VIEW_SHOWN_STORAGE_PREFIX}${this._currentProvider.id}`, StorageScope.APPLICATION, false);
+		return isIAccessibleViewContentProvider(this._currentProvider) ? this._configurationService.getValue(this._currentProvider.verbositySettingKey) === true : this._storageService.getBoolean(`${ACCESSIBLE_VIEW_SHOWN_STORAGE_PREFIX}${this._currentProvider.id}`, StorageScope.APPLICATION, false);
 	}
 
 	goToSymbol(): void {
 		if (!this._currentProvider) {
 			return;
 		}
+		this._isInQuickPick = true;
 		this._instantiationService.createInstance(AccessibleViewSymbolQuickPick, this).show(this._currentProvider);
 	}
 
@@ -381,18 +410,18 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 				inBlock = false;
 				const endLine = i;
 				const code = lines.slice(startLine, endLine).join('\n');
-				this._codeBlocks?.push({ startLine, endLine, code, languageId });
+				this._codeBlocks?.push({ startLine, endLine, code, languageId, chatSessionResource: undefined });
 			}
 		});
 		this._accessibleViewContainsCodeBlocks.set(this._codeBlocks.length > 0);
 	}
 
 	getSymbols(): IAccessibleViewSymbol[] | undefined {
-		const provider = this._currentProvider instanceof AccessibleContentProvider ? this._currentProvider : undefined;
+		const provider = this._currentProvider ? this._currentProvider : undefined;
 		if (!this._currentContent || !provider) {
 			return;
 		}
-		const symbols: IAccessibleViewSymbol[] = provider.getSymbols?.() || [];
+		const symbols: IAccessibleViewSymbol[] = 'getSymbols' in provider ? provider.getSymbols?.() || [] : [];
 		if (symbols?.length) {
 			return symbols;
 		}
@@ -416,7 +445,7 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 	}
 
 	configureKeybindings(unassigned: boolean): void {
-		this._inQuickPick = true;
+		this._isInQuickPick = true;
 		const provider = this._updateLastProvider();
 		const items = unassigned ? provider?.options?.configureKeybindingItems : provider?.options?.configuredKeybindingItems;
 		if (!items) {
@@ -440,7 +469,7 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 				this.show(provider);
 			}
 			disposables.dispose();
-			this._inQuickPick = false;
+			this._isInQuickPick = false;
 		}));
 	}
 
@@ -495,12 +524,13 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 		if (lineNumber === undefined) {
 			return;
 		}
+		this._isInQuickPick = false;
 		this.show(provider, undefined, undefined, { lineNumber, column: 1 });
 		this._updateContextKeys(provider, true);
 	}
 
 	disableHint(): void {
-		if (!(this._currentProvider instanceof AccessibleContentProvider)) {
+		if (!isIAccessibleViewContentProvider(this._currentProvider)) {
 			return;
 		}
 		this._configurationService.updateValue(this._currentProvider?.verbositySettingKey, false);
@@ -518,6 +548,10 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 		this._accessibleViewSupportsNavigation.set(provider.provideNextContent !== undefined || provider.providePreviousContent !== undefined);
 		this._accessibleViewVerbosityEnabled.set(this._verbosityEnabled());
 		this._accessibleViewGoToSymbolSupported.set(this._goToSymbolsSupported() ? this.getSymbols()?.length! > 0 : false);
+	}
+
+	private _getStableUri(providerId: string): URI {
+		return URI.from({ path: `accessible-view-${providerId}`, scheme: Schemas.accessibleView });
 	}
 
 	private _updateContent(provider: AccesibleViewContentProvider, updatedContent?: string): void {
@@ -556,6 +590,8 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 	}
 
 	private _render(provider: AccesibleViewContentProvider, container: HTMLElement, showAccessibleViewHelp?: boolean, updatedContent?: string): IDisposable {
+		const isSameProvider = this._currentProvider?.id === provider.id;
+		const previousPosition = isSameProvider ? this._editorWidget.getPosition() : undefined;
 		this._currentProvider = provider;
 		this._accessibleViewCurrentProviderId.set(provider.id);
 		const verbose = this._verbosityEnabled();
@@ -563,11 +599,20 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 		this.calculateCodeBlocks(this._currentContent);
 		this._updateContextKeys(provider, true);
 		const widgetIsFocused = this._editorWidget.hasTextFocus() || this._editorWidget.hasWidgetFocus();
-		this._getTextModel(URI.from({ path: `accessible-view-${provider.id}`, scheme: Schemas.accessibleView, fragment: this._currentContent })).then((model) => {
+		const stableUri = this._getStableUri(provider.id);
+		this._getTextModel(stableUri).then((model) => {
 			if (!model) {
 				return;
 			}
-			this._editorWidget.setModel(model);
+			// Update the content of the existing model instead of creating a new one
+			// This preserves the cursor position when content changes
+			const currentContent = this._currentContent ?? '';
+			if (model.getValue() !== currentContent) {
+				model.setValue(currentContent);
+			}
+			if (this._editorWidget.getModel() !== model) {
+				this._editorWidget.setModel(model);
+			}
 			const domNode = this._editorWidget.getDomNode();
 			if (!domNode) {
 				return;
@@ -604,17 +649,45 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 						this._editorWidget.revealLine(position.lineNumber);
 					}
 				}
+			} else if (previousPosition) {
+				this._editorWidget.setPosition(previousPosition);
+			} else {
+				// Restore the saved position for this provider if available (e.g., after close and reopen)
+				const savedPosition = this._lastProviderPosition.get(provider.id);
+				if (savedPosition) {
+					const lineCount = this._editorWidget.getModel()?.getLineCount() ?? 0;
+					// Only restore if the saved position is still valid within the current content
+					if (savedPosition.lineNumber <= lineCount) {
+						this._editorWidget.setPosition(savedPosition);
+						this._editorWidget.revealPosition(savedPosition);
+					}
+				}
 			}
 		});
 		this._updateToolbar(this._currentProvider.actions, provider.options.type);
 
 		const hide = (e?: KeyboardEvent | IKeyboardEvent): void => {
-			if (!this._inQuickPick) {
+			const thisWindowIsFocused = getWindow(this._editorWidget.getDomNode()).document.hasFocus();
+			if (!thisWindowIsFocused) {
+				// When switching windows, keep accessible view open
+				e?.preventDefault();
+				e?.stopPropagation();
+				return;
+			}
+			if (!this._isInQuickPick) {
 				provider.onClose();
 			}
 			e?.stopPropagation();
 			this._contextViewService.hideContextView();
+			if (this._isInQuickPick) {
+				return;
+			}
 			this._updateContextKeys(provider, false);
+			// Save the cursor position for this provider so it can be restored on reopen
+			const currentPosition = this._editorWidget.getPosition();
+			if (currentPosition) {
+				this._lastProviderPosition.set(provider.id, currentPosition);
+			}
 			this._lastProvider = undefined;
 			this._currentContent = undefined;
 			this._currentProvider?.dispose();
@@ -655,9 +728,8 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 
 	private _updateToolbar(providedActions?: IAction[], type?: AccessibleViewType): void {
 		this._toolbar.setAriaLabel(type === AccessibleViewType.Help ? localize('accessibleHelpToolbar', 'Accessibility Help') : localize('accessibleViewToolbar', "Accessible View"));
-		const menuActions: IAction[] = [];
 		const toolbarMenu = this._register(this._menuService.createMenu(MenuId.AccessibleView, this._contextKeyService));
-		createAndFillInActionBarActions(toolbarMenu, {}, menuActions);
+		const menuActions = getFlatActionBarActions(toolbarMenu.getActions({}));
 		if (providedActions) {
 			for (const providedAction of providedActions) {
 				providedAction.class = providedAction.class || ThemeIcon.asClassName(Codicon.primitiveSquare);
@@ -671,9 +743,9 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 
 	private _layout(): void {
 		const dimension = this._layoutService.activeContainerDimension;
-		const maxHeight = dimension.height && dimension.height * .4;
+		const maxHeight = dimension.height && dimension.height * DIMENSIONS.MAX_HEIGHT_RATIO;
 		const height = Math.min(maxHeight, this._editorWidget.getContentHeight());
-		const width = Math.min(dimension.width * 0.62 /* golden cut */, DIMENSIONS.MAX_WIDTH);
+		const width = Math.min(dimension.width * DIMENSIONS.WIDTH_RATIO, DIMENSIONS.MAX_WIDTH);
 		this._editorWidget.layout({ width, height });
 	}
 
@@ -682,7 +754,8 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 		if (existing && !existing.isDisposed()) {
 			return existing;
 		}
-		return this._modelService.createModel(resource.fragment, null, resource, false);
+		// Create an empty model - content will be set via setValue() to preserve cursor position
+		return this._modelService.createModel('', null, resource, false);
 	}
 
 	private _goToSymbolsSupported(): boolean {
@@ -793,7 +866,7 @@ export class AccessibleView extends Disposable implements ITextModelContentProvi
 	}
 
 	private _navigationHint(): string {
-		return localize('accessibleViewNextPreviousHint', "Show the next item{0} or previous item{1}.", `<keybinding:${AccessibilityCommandId.ShowNext}`, `<keybinding:${AccessibilityCommandId.ShowPrevious}>`);
+		return localize('accessibleViewNextPreviousHint', "Show the next item{0} or previous item{1}.", `<keybinding:${AccessibilityCommandId.ShowNext}>`, `<keybinding:${AccessibilityCommandId.ShowPrevious}>`);
 	}
 
 	private _disableVerbosityHint(provider: AccesibleViewContentProvider): string {
@@ -939,11 +1012,15 @@ class AccessibleViewSymbolQuickPick {
 		for (const symbol of symbols) {
 			picks.push({
 				label: symbol.label,
-				ariaLabel: symbol.ariaLabel
+				ariaLabel: symbol.ariaLabel,
+				firstListItem: symbol.firstListItem,
+				lineNumber: symbol.lineNumber,
+				endLineNumber: symbol.endLineNumber,
+				markdownToParse: symbol.markdownToParse
 			});
 		}
 		quickPick.canSelectMany = false;
-		quickPick.items = symbols;
+		quickPick.items = picks;
 		quickPick.show();
 		disposables.add(quickPick.onDidAccept(() => {
 			this._accessibleView.showSymbol(provider, quickPick.selectedItems[0]);
